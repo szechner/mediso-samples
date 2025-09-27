@@ -1,0 +1,80 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{DB56A39D-B0DC-4B4D-8FD8-BF679F47157F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.SharedKernel", "src\Mediso.PaymentSample.SharedKernel\Mediso.PaymentSample.SharedKernel.csproj", "{7A1C0DBF-B09A-43BC-9764-3AC7A086AA66}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.Domain", "src\Mediso.PaymentSample.Domain\Mediso.PaymentSample.Domain.csproj", "{2A305C8C-E45D-4166-A42C-44EF3B9B2064}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.Application", "src\Mediso.PaymentSample.Application\Mediso.PaymentSample.Application.csproj", "{40D5BED2-BB52-41BF-B426-81334EED3872}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.Infrastructure", "src\Mediso.PaymentSample.Infrastructure\Mediso.PaymentSample.Infrastructure.csproj", "{641252E6-1114-4320-AA5A-720E5B9ECEC8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.Api", "src\Mediso.PaymentSample.Api\Mediso.PaymentSample.Api.csproj", "{9522FF32-73AE-4B3B-99A0-2D3E171E0F6B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{3C0E8E8D-E1FD-44B4-9E4D-9BD3BD166B3D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.UnitTests", "tests\Mediso.PaymentSample.UnitTests\Mediso.PaymentSample.UnitTests.csproj", "{B33B5DA8-5334-448B-A5D5-A67B840ECCE6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.IntegrationTests", "tests\Mediso.PaymentSample.IntegrationTests\Mediso.PaymentSample.IntegrationTests.csproj", "{FFC51CC5-8AC4-4CC8-8B34-3858EE93C508}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{F8F96EA7-CEC0-46C3-8596-2FE5C8372071}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.DataSeeder", "tools\Mediso.PaymentSample.DataSeeder\Mediso.PaymentSample.DataSeeder.csproj", "{5CA5D1CF-FD42-4407-94DE-F270C88A192B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7A1C0DBF-B09A-43BC-9764-3AC7A086AA66}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A1C0DBF-B09A-43BC-9764-3AC7A086AA66}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A1C0DBF-B09A-43BC-9764-3AC7A086AA66}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A1C0DBF-B09A-43BC-9764-3AC7A086AA66}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2A305C8C-E45D-4166-A42C-44EF3B9B2064}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2A305C8C-E45D-4166-A42C-44EF3B9B2064}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2A305C8C-E45D-4166-A42C-44EF3B9B2064}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2A305C8C-E45D-4166-A42C-44EF3B9B2064}.Release|Any CPU.Build.0 = Release|Any CPU
+		{40D5BED2-BB52-41BF-B426-81334EED3872}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40D5BED2-BB52-41BF-B426-81334EED3872}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40D5BED2-BB52-41BF-B426-81334EED3872}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40D5BED2-BB52-41BF-B426-81334EED3872}.Release|Any CPU.Build.0 = Release|Any CPU
+		{641252E6-1114-4320-AA5A-720E5B9ECEC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{641252E6-1114-4320-AA5A-720E5B9ECEC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{641252E6-1114-4320-AA5A-720E5B9ECEC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{641252E6-1114-4320-AA5A-720E5B9ECEC8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9522FF32-73AE-4B3B-99A0-2D3E171E0F6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9522FF32-73AE-4B3B-99A0-2D3E171E0F6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9522FF32-73AE-4B3B-99A0-2D3E171E0F6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9522FF32-73AE-4B3B-99A0-2D3E171E0F6B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B33B5DA8-5334-448B-A5D5-A67B840ECCE6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B33B5DA8-5334-448B-A5D5-A67B840ECCE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B33B5DA8-5334-448B-A5D5-A67B840ECCE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B33B5DA8-5334-448B-A5D5-A67B840ECCE6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FFC51CC5-8AC4-4CC8-8B34-3858EE93C508}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FFC51CC5-8AC4-4CC8-8B34-3858EE93C508}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FFC51CC5-8AC4-4CC8-8B34-3858EE93C508}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FFC51CC5-8AC4-4CC8-8B34-3858EE93C508}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5CA5D1CF-FD42-4407-94DE-F270C88A192B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5CA5D1CF-FD42-4407-94DE-F270C88A192B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5CA5D1CF-FD42-4407-94DE-F270C88A192B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5CA5D1CF-FD42-4407-94DE-F270C88A192B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{7A1C0DBF-B09A-43BC-9764-3AC7A086AA66} = {DB56A39D-B0DC-4B4D-8FD8-BF679F47157F}
+		{2A305C8C-E45D-4166-A42C-44EF3B9B2064} = {DB56A39D-B0DC-4B4D-8FD8-BF679F47157F}
+		{40D5BED2-BB52-41BF-B426-81334EED3872} = {DB56A39D-B0DC-4B4D-8FD8-BF679F47157F}
+		{641252E6-1114-4320-AA5A-720E5B9ECEC8} = {DB56A39D-B0DC-4B4D-8FD8-BF679F47157F}
+		{9522FF32-73AE-4B3B-99A0-2D3E171E0F6B} = {DB56A39D-B0DC-4B4D-8FD8-BF679F47157F}
+		{B33B5DA8-5334-448B-A5D5-A67B840ECCE6} = {3C0E8E8D-E1FD-44B4-9E4D-9BD3BD166B3D}
+		{FFC51CC5-8AC4-4CC8-8B34-3858EE93C508} = {3C0E8E8D-E1FD-44B4-9E4D-9BD3BD166B3D}
+		{5CA5D1CF-FD42-4407-94DE-F270C88A192B} = {F8F96EA7-CEC0-46C3-8596-2FE5C8372071}
+	EndGlobalSection
+EndGlobal
