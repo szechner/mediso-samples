@@ -23,7 +23,6 @@ public interface IAccountsModule
 public sealed record AccountBalance(
     AccountId AccountId,
     Currency Currency,
-    decimal Available,
     decimal Reserved,
     decimal Total
 )

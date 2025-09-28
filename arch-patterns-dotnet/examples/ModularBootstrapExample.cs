@@ -81,7 +81,7 @@ public class ModularBootstrapExample
             
             return Results.Ok(new
             {
-                timestamp = DateTime.UtcNow,
+                timestamp = DateTimeOffset.UtcNow,
                 overall_status = health.All(h => h.Value.IsHealthy) ? "Healthy" : "Unhealthy",
                 modules = health
             });

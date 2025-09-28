@@ -33,7 +33,7 @@ public sealed class LedgerModuleRegistration : IModuleRegistration
         logger.LogInformation("Ledger module configured successfully");
     }
 
-    public async Task<ModuleHealthStatus> CheckHealthAsync(IServiceProvider serviceProvider)
+    public Task<ModuleHealthStatus> CheckHealthAsync(IServiceProvider serviceProvider)
     {
         try
         {
@@ -41,14 +41,14 @@ public sealed class LedgerModuleRegistration : IModuleRegistration
             {
                 ["module_status"] = "registered",
                 ["implementation_status"] = "placeholder",
-                ["last_check"] = DateTime.UtcNow
+                ["last_check"] = DateTimeOffset.UtcNow
             };
 
-            return new ModuleHealthStatus(ModuleName, true, "Healthy", details);
+            return Task.FromResult(new ModuleHealthStatus(ModuleName, true, "Healthy", details));
         }
         catch (Exception ex)
         {
-            return new ModuleHealthStatus(ModuleName, false, "Unhealthy", Exception: ex);
+            return Task.FromResult(new ModuleHealthStatus(ModuleName, false, "Unhealthy", Exception: ex));
         }
     }
 }

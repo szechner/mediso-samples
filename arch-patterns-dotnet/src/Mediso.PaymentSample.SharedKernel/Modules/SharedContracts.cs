@@ -5,7 +5,7 @@ namespace Mediso.PaymentSample.SharedKernel.Modules;
 /// </summary>
 public abstract record ModuleContract
 {
-    public DateTime RequestedAt { get; init; } = DateTime.UtcNow;
+    public DateTimeOffset RequestedAt { get; init; } = DateTimeOffset.UtcNow;
     public string CorrelationId { get; init; } = Guid.NewGuid().ToString();
 }
 
@@ -16,7 +16,7 @@ public abstract record ModuleResult
 {
     public bool IsSuccess { get; init; }
     public string[]? Errors { get; init; }
-    public DateTime CompletedAt { get; init; } = DateTime.UtcNow;
+    public DateTimeOffset CompletedAt { get; init; } = DateTimeOffset.UtcNow;
 
     public static T Success<T>() where T : ModuleResult, new() => new() { IsSuccess = true };
     public static T Failure<T>(params string[] errors) where T : ModuleResult, new() => new() { IsSuccess = false, Errors = errors };
@@ -50,7 +50,7 @@ public sealed record SharedPaymentInfo(
     Guid FromAccountId,
     Guid ToAccountId,
     string? Description = null,
-    DateTime? DueDate = null,
+    DateTimeOffset? DueDate = null,
     Dictionary<string, string>? Metadata = null
 ) : ModuleContract;
 
@@ -77,7 +77,7 @@ public sealed record SharedAccountBalance(
     decimal ReservedAmount,
     decimal TotalBalance,
     string Currency,
-    DateTime BalanceDate
+    DateTimeOffset BalanceDate
 ) : ModuleContract;
 
 /// <summary>
@@ -90,7 +90,7 @@ public sealed record SharedAccountProfile(
     string CustomerType,
     string RiskLevel,
     bool IsActive,
-    DateTime CreatedAt,
+    DateTimeOffset CreatedAt,
     Dictionary<string, string>? Attributes = null
 ) : ModuleContract;
 
@@ -101,7 +101,7 @@ public sealed record SharedReservationResult : ModuleResult
 {
     public Guid? ReservationId { get; init; }
     public decimal ReservedAmount { get; init; }
-    public DateTime? ExpiresAt { get; init; }
+    public DateTimeOffset? ExpiresAt { get; init; }
 }
 
 // ============ COMPLIANCE MODULE CONTRACTS ============
@@ -116,7 +116,7 @@ public sealed record SharedComplianceResult : ModuleResult
     public string? RiskScore { get; init; }
     public string[]? Flags { get; init; }
     public string? ReasonCode { get; init; }
-    public DateTime? ReviewDate { get; init; }
+    public DateTimeOffset? ReviewDate { get; init; }
 }
 
 /// <summary>
@@ -140,7 +140,7 @@ public sealed record SharedTransactionLimits(
     decimal TransactionLimit,
     decimal UsedDaily,
     decimal UsedMonthly,
-    DateTime LimitsDate
+    DateTimeOffset LimitsDate
 ) : ModuleContract;
 
 // ============ LEDGER MODULE CONTRACTS ============
@@ -151,7 +151,7 @@ public sealed record SharedTransactionLimits(
 public sealed record SharedJournalEntry(
     Guid EntryId,
     string Reference,
-    DateTime PostedDate,
+    DateTimeOffset PostedDate,
     string Description,
     decimal Amount,
     string Currency,
@@ -177,7 +177,7 @@ public sealed record SharedLedgerBalance(
     Guid AccountId,
     decimal Balance,
     string Currency,
-    DateTime CalculatedAt,
+    DateTimeOffset CalculatedAt,
     int TransactionCount
 ) : ModuleContract;
 
@@ -212,7 +212,7 @@ public sealed record SharedNotification(
 public sealed record SharedNotificationResult : ModuleResult
 {
     public Guid? NotificationId { get; init; }
-    public DateTime? SentAt { get; init; }
+    public DateTimeOffset? SentAt { get; init; }
     public string? DeliveryStatus { get; init; }
 }
 
@@ -223,7 +223,7 @@ public sealed record SharedNotificationResult : ModuleResult
 /// </summary>
 public abstract record SharedIntegrationEvent(
     Guid EventId,
-    DateTime OccurredAt,
+    DateTimeOffset OccurredAt,
     string EventType,
     string SourceModule
 ) : ModuleContract
@@ -242,7 +242,7 @@ public sealed record SharedPaymentStateChanged(
     string? Reason = null
 ) : SharedIntegrationEvent(
     Guid.NewGuid(), 
-    DateTime.UtcNow, 
+    DateTimeOffset.UtcNow, 
     nameof(SharedPaymentStateChanged), 
     "Payments");
 
@@ -257,7 +257,7 @@ public sealed record SharedBalanceChanged(
     string TransactionType
 ) : SharedIntegrationEvent(
     Guid.NewGuid(), 
-    DateTime.UtcNow, 
+    DateTimeOffset.UtcNow, 
     nameof(SharedBalanceChanged), 
     "Accounts");
 
@@ -272,6 +272,6 @@ public sealed record SharedHighRiskActivityDetected(
     Dictionary<string, string>? RiskFactors = null
 ) : SharedIntegrationEvent(
     Guid.NewGuid(), 
-    DateTime.UtcNow, 
+    DateTimeOffset.UtcNow, 
     nameof(SharedHighRiskActivityDetected), 
     "Compliance");

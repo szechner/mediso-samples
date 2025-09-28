@@ -66,7 +66,7 @@ public sealed record PaymentInfo(
     Guid PayeeAccountId,
     string Reference,
     string Status,
-    DateTime CreatedAt
+    DateTimeOffset CreatedAt
 );
 
 public sealed record ComplianceResult(
@@ -103,7 +103,7 @@ public sealed record ComplianceDecisionResult(
     Guid PaymentId,
     bool Approved,
     string ReviewedBy,
-    DateTime ReviewedAt,
+    DateTimeOffset ReviewedAt,
     string? Reason = null
 );
 
@@ -117,7 +117,7 @@ public sealed record RiskProfileInfo(
     Guid AccountId,
     string RiskLevel,
     bool IsHighRisk,
-    DateTime LastUpdated
+    DateTimeOffset LastUpdated
 );
 
 public sealed record CreateJournalRequest(
@@ -143,7 +143,7 @@ public sealed record JournalEntryInfo(
     decimal Amount,
     string Currency,
     string Reference,
-    DateTime CreatedAt
+    DateTimeOffset CreatedAt
 );
 
 public sealed record AccountLedgerBalanceInfo(
@@ -151,5 +151,5 @@ public sealed record AccountLedgerBalanceInfo(
     decimal DebitTotal,
     decimal CreditTotal,
     decimal NetBalance,
-    DateTime CalculatedAt
+    DateTimeOffset CalculatedAt
 );

@@ -87,7 +87,6 @@ public sealed record ComplianceFlag(
 /// </summary>
 public sealed record RiskScore(
     decimal Score,
-    RiskLevel Level,
     string CalculationMethod = "v1.0"
 )
 {

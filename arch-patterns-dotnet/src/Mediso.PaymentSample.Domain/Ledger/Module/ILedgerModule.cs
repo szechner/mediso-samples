@@ -57,7 +57,6 @@ public sealed record AccountLedgerBalance(
     AccountId AccountId,
     decimal DebitTotal,
     decimal CreditTotal,
-    decimal NetBalance,
     DateTimeOffset CalculatedAt
 )
 {
