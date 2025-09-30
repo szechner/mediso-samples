@@ -8,9 +8,30 @@ namespace Mediso.PaymentSample.SharedKernel.Domain;
 /// </summary>
 public interface IIntegrationEvent
 {
-    DateTimeOffset OccurredAt { get; }
+    /// <summary>
+    /// Gets the timestamp when the integration event was created
+    /// </summary>
+    DateTimeOffset CreatedAt { get; }
+    
+    /// <summary>
+    /// Gets the unique identifier for this event instance
+    /// </summary>
     Guid EventId { get; }
+    
+    /// <summary>
+    /// Gets the type name of the event
+    /// </summary>
     string EventType { get; }
+    
+    /// <summary>
+    /// Gets the version of the event schema for backward compatibility
+    /// </summary>
+    int Version { get; }
+    
+    /// <summary>
+    /// Gets the correlation identifier to track related events and operations
+    /// </summary>
+    string CorrelationId { get; }
 }
 
 /// <summary>
@@ -18,7 +39,28 @@ public interface IIntegrationEvent
 /// </summary>
 public abstract record IntegrationEvent : IIntegrationEvent
 {
-    public Guid EventId { get; } = Guid.NewGuid();
-    public DateTimeOffset OccurredAt { get; } = DateTimeOffset.UtcNow;
+    /// <summary>
+    /// Unique identifier for this event instance
+    /// </summary>
+    public Guid EventId { get; init; } = Guid.NewGuid();
+    
+    /// <summary>
+    /// Timestamp when the event was created
+    /// </summary>
+    public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
+    
+    /// <summary>
+    /// Type name of the event (defaults to class name)
+    /// </summary>
     public virtual string EventType => GetType().Name;
+    
+    /// <summary>
+    /// Version of the event schema (defaults to 1)
+    /// </summary>
+    public virtual int Version => 1;
+    
+    /// <summary>
+    /// Correlation identifier for tracking related events (auto-generated if not provided)
+    /// </summary>
+    public string CorrelationId { get; init; } = Guid.NewGuid().ToString();
 }

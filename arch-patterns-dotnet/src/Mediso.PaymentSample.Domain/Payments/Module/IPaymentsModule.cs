@@ -45,7 +45,7 @@ public sealed record PaymentResult(
 /// </summary>
 public sealed record PaymentEvent(
     string EventType,
-    DateTimeOffset OccurredAt,
+    DateTimeOffset CreatedAt,
     object Data
 );
 

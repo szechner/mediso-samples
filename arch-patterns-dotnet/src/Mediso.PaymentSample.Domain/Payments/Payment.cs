@@ -1,5 +1,8 @@
-﻿using Mediso.PaymentSample.Domain.Common;
+using Mediso.PaymentSample.Domain.Common;
 using Mediso.PaymentSample.SharedKernel.Domain;
+using Mediso.PaymentSample.SharedKernel.Tracing;
+using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace Mediso.PaymentSample.Domain.Payments;
 
@@ -58,12 +61,20 @@ public sealed class Payment : Aggregate<PaymentId>
     /// <exception cref="DomainException">Thrown when payer and payee are the same account</exception>
     public static Payment Create(PaymentId id, Money amount, AccountId payer, AccountId payee, string reference)
     {
+        using var activity = TracingConstants.DomainActivitySource.StartActivity(TracingConstants.Activities.PaymentCreation);
+        activity?.SetTag(TracingConstants.Tags.PaymentId, id.ToString());
+        activity?.SetTag(TracingConstants.Tags.PaymentAmount, amount.Amount.ToString());
+        activity?.SetTag(TracingConstants.Tags.PaymentCurrency, amount.Currency.Code);
+        activity?.SetTag(TracingConstants.Tags.OperationType, "create");
+        
         if (payer.Value == payee.Value)
             throw new DomainException("Payer and Payee must differ");
 
-
         var payment = new Payment();
-        payment.Raise(new PaymentRequested(id, amount.EnsurePositive(), payer, payee, reference, DateTimeOffset.UtcNow));
+        payment.Raise(new PaymentRequested(id, amount.EnsurePositive(), payer, payee, reference));
+        
+        activity?.SetTag(TracingConstants.Tags.PaymentState, PaymentState.Requested.ToString());
+        
         return payment;
     }
 
@@ -75,8 +86,13 @@ public sealed class Payment : Aggregate<PaymentId>
     /// <exception cref="DomainException">Thrown when the payment is not in an allowed state</exception>
     public void MarkAMLPassed(string ruleSetVersion)
     {
+        using var activity = TracingConstants.DomainActivitySource.StartActivity(TracingConstants.Activities.AMLCheck);
+        activity?.SetTag(TracingConstants.Tags.PaymentId, Id.ToString());
+        activity?.SetTag(TracingConstants.Tags.PaymentState, State.ToString());
+        activity?.SetTag(TracingConstants.Tags.OperationType, "aml-passed");
+        
         EnsureState(PaymentState.Requested, PaymentState.Flagged, PaymentState.Released);
-        Raise(new AMLPassed(Id, ruleSetVersion, DateTimeOffset.UtcNow));
+        Raise(new AMLPassed(Id, ruleSetVersion));
     }
 
 
@@ -89,7 +105,7 @@ public sealed class Payment : Aggregate<PaymentId>
     public void Flag(string reason, string severity)
     {
         EnsureState(PaymentState.Requested);
-        Raise(new PaymentFlagged(Id, reason, severity, DateTimeOffset.UtcNow));
+        Raise(new PaymentFlagged(Id, reason, severity));
     }
 
 
@@ -100,7 +116,7 @@ public sealed class Payment : Aggregate<PaymentId>
     public void ReleaseAfterFlag()
     {
         EnsureState(PaymentState.Flagged);
-        Raise(new AMLPassed(Id, RuleSetVersion: "manual-release", DateTimeOffset.UtcNow));
+        Raise(new AMLPassed(Id, RuleSetVersion: "manual-release"));
     }
 
 
@@ -111,8 +127,14 @@ public sealed class Payment : Aggregate<PaymentId>
     /// <exception cref="DomainException">Thrown when the payment is not in Requested or Released state</exception>
     public void ReserveFunds(ReservationId reservationId)
     {
+        using var activity = TracingConstants.DomainActivitySource.StartActivity(TracingConstants.Activities.FundsReservation);
+        activity?.SetTag(TracingConstants.Tags.PaymentId, Id.ToString());
+        activity?.SetTag(TracingConstants.Tags.PaymentState, State.ToString());
+        activity?.SetTag(TracingConstants.Tags.ReservationId, reservationId.ToString());
+        activity?.SetTag(TracingConstants.Tags.OperationType, "reserve-funds");
+        
         EnsureState(PaymentState.Requested, PaymentState.Released);
-        Raise(new FundsReserved(Id, reservationId, Amount, DateTimeOffset.UtcNow));
+        Raise(new FundsReserved(Id, reservationId, Amount));
     }
 
 
@@ -124,7 +146,7 @@ public sealed class Payment : Aggregate<PaymentId>
     public void FailReservation(string reason)
     {
         EnsureState(PaymentState.Requested, PaymentState.Released);
-        Raise(new FundsReservationFailed(Id, reason, DateTimeOffset.UtcNow));
+        Raise(new FundsReservationFailed(Id, reason));
     }
 
 
@@ -135,9 +157,15 @@ public sealed class Payment : Aggregate<PaymentId>
     /// <exception cref="DomainException">Thrown when the payment is not in Reserved state or no entries provided</exception>
     public void Journal(IReadOnlyList<LedgerEntry> entries)
     {
+        using var activity = TracingConstants.DomainActivitySource.StartActivity(TracingConstants.Activities.PaymentJournaling);
+        activity?.SetTag(TracingConstants.Tags.PaymentId, Id.ToString());
+        activity?.SetTag(TracingConstants.Tags.PaymentState, State.ToString());
+        activity?.SetTag(TracingConstants.Tags.OperationType, "journal");
+        activity?.SetTag("entries.count", entries.Count.ToString());
+        
         EnsureState(PaymentState.Reserved);
         if (entries.Count == 0) throw new DomainException("Journal requires entries");
-        Raise(new PaymentJournaled(Id, entries, DateTimeOffset.UtcNow));
+        Raise(new PaymentJournaled(Id, entries));
     }
 
 
@@ -149,8 +177,16 @@ public sealed class Payment : Aggregate<PaymentId>
     /// <exception cref="DomainException">Thrown when the payment is not in Journaled state</exception>
     public void Settle(string channel, string? externalRef)
     {
+        using var activity = TracingConstants.DomainActivitySource.StartActivity(TracingConstants.Activities.PaymentSettlement);
+        activity?.SetTag(TracingConstants.Tags.PaymentId, Id.ToString());
+        activity?.SetTag(TracingConstants.Tags.PaymentState, State.ToString());
+        activity?.SetTag(TracingConstants.Tags.OperationType, "settle");
+        activity?.SetTag("settlement.channel", channel);
+        if (externalRef != null)
+            activity?.SetTag("settlement.external_ref", externalRef);
+        
         EnsureState(PaymentState.Journaled);
-        Raise(new PaymentSettled(Id, channel, externalRef, DateTimeOffset.UtcNow));
+        Raise(new PaymentSettled(Id, channel, externalRef));
     }
 
 
@@ -162,7 +198,7 @@ public sealed class Payment : Aggregate<PaymentId>
     public void Cancel(string by)
     {
         EnsureState(PaymentState.Requested, PaymentState.Flagged, PaymentState.Released);
-        Raise(new PaymentCancelled(Id, by, DateTimeOffset.UtcNow));
+        Raise(new PaymentCancelled(Id, by));
     }
 
 
@@ -174,7 +210,7 @@ public sealed class Payment : Aggregate<PaymentId>
     public void Decline(string reason)
     {
         EnsureState(PaymentState.Requested, PaymentState.Flagged, PaymentState.Released, PaymentState.Reserved);
-        Raise(new PaymentDeclined(Id, reason, DateTimeOffset.UtcNow));
+        Raise(new PaymentDeclined(Id, reason));
     }
 
     /// <summary>
@@ -184,7 +220,7 @@ public sealed class Payment : Aggregate<PaymentId>
     public void Fail(string reason)
     {
         // Can fail from multiple states (e.g., settlement failure)
-        Raise(new PaymentFailed(Id, reason, DateTimeOffset.UtcNow));
+        Raise(new PaymentFailed(Id, reason));
     }
 
 
@@ -252,4 +288,19 @@ public sealed class Payment : Aggregate<PaymentId>
         if (!allowed.Contains(State))
             throw new DomainException($"Operation not allowed in state {State}");
     }
+
+    #region Marten Event Sourcing Apply Methods
+    
+    public void Apply(PaymentRequested @event) => When(@event);
+    public void Apply(AMLPassed @event) => When(@event);
+    public void Apply(PaymentFlagged @event) => When(@event);
+    public void Apply(FundsReserved @event) => When(@event);
+    public void Apply(FundsReservationFailed @event) => When(@event);
+    public void Apply(PaymentJournaled @event) => When(@event);
+    public void Apply(PaymentSettled @event) => When(@event);
+    public void Apply(PaymentCancelled @event) => When(@event);
+    public void Apply(PaymentDeclined @event) => When(@event);
+    public void Apply(PaymentFailed @event) => When(@event);
+    
+    #endregion
 }

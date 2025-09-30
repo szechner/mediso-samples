@@ -16,7 +16,13 @@ public sealed record PaymentCreatedIntegrationEvent(
     AccountId PayeeAccountId,
     Money Amount,
     string Reference
-) : IntegrationEvent;
+) : IntegrationEvent
+{
+    /// <summary>
+    /// Version 2 includes enhanced payment information
+    /// </summary>
+    public override int Version => 2;
+};
 
 /// <summary>
 /// Published by Compliance module when AML screening is completed
@@ -27,7 +33,13 @@ public sealed record AMLScreeningCompletedIntegrationEvent(
     string RuleSetVersion,
     string? Reason = null,
     string? Severity = null
-) : IntegrationEvent;
+) : IntegrationEvent
+{
+    /// <summary>
+    /// Version 1 - initial AML screening result format
+    /// </summary>
+    public override int Version => 1;
+};
 
 /// <summary>
 /// Published by Payments module when funds need to be reserved

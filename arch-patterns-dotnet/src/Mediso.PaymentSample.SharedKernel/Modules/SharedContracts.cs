@@ -223,12 +223,24 @@ public sealed record SharedNotificationResult : ModuleResult
 /// </summary>
 public abstract record SharedIntegrationEvent(
     Guid EventId,
-    DateTimeOffset OccurredAt,
+    DateTimeOffset CreatedAt,
     string EventType,
     string SourceModule
 ) : ModuleContract
 {
+    /// <summary>
+    /// Version of the event schema for backward compatibility
+    /// </summary>
     public int Version { get; init; } = 1;
+    
+    /// <summary>
+    /// Correlation identifier for tracking related events
+    /// </summary>
+    public new string CorrelationId { get; init; } = Guid.NewGuid().ToString();
+    
+    /// <summary>
+    /// Additional event data as key-value pairs
+    /// </summary>
     public Dictionary<string, object>? EventData { get; init; }
 }
 

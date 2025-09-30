@@ -1,6 +1,45 @@
 @Mediso.PaymentSample.Api_HostAddress = http://localhost:5280
 
-GET {{Mediso.PaymentSample.Api_HostAddress}}/weatherforecast/
+# Create a new payment
+POST {{Mediso.PaymentSample.Api_HostAddress}}/api/payments
+Content-Type: application/json
+X-Correlation-ID: {{$guid}}
+
+{
+  "amount": 100.50,
+  "currency": "USD",
+  "payerAccountId": "f7b0f8eb-ac6c-415c-bbc2-4e23be6d3416",
+  "payeeAccountId": "f7b0f8eb-ac6c-415c-bbc2-4e23be6d34ff",
+  "reference": "Test payment from HTTP file"
+}
+
+###
+
+# Get payment by ID
+GET {{Mediso.PaymentSample.Api_HostAddress}}/api/payments/{{$guid}}
 Accept: application/json
+X-Correlation-ID: {{$guid}}
+
+###
+
+# Mark payment as AML passed
+POST {{Mediso.PaymentSample.Api_HostAddress}}/api/payments/{{$guid}}/aml-check
+Content-Type: application/json
+X-Correlation-ID: {{$guid}}
+
+{
+  "ruleSetVersion": "v2.1"
+}
+
+###
+
+# Reserve funds for payment
+POST {{Mediso.PaymentSample.Api_HostAddress}}/api/payments/{{$guid}}/reserve
+Content-Type: application/json
+X-Correlation-ID: {{$guid}}
+
+{
+  "reservationId": "{{$guid}}"
+}
 
 ###
