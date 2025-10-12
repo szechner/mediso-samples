@@ -90,7 +90,7 @@ public class PostgreSql18SessionLogger : IMartenSessionLogger
         activity?.SetTag("postgresql.error.message", ex.Message);
         activity?.SetTag("postgresql.error.type", ex.GetType().Name);
         activity?.SetTag("postgresql.command_hash", command.CommandText.GetHashCode());
-        activity?.SetTag($"postgresql.command..text", command.CommandText);
+        activity?.SetTag("postgresql.command.text", command.CommandText);
         
         _logger?.LogError(ex,
             "PostgreSQL query failed after {Duration}ms - {CommandType} - Error: {ErrorType}",
