@@ -17,7 +17,7 @@ public sealed class ComplianceModuleRegistration : IModuleRegistration
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
         // Register compliance module facade using existing domain interface
-        services.AddScoped<IComplianceModuleFacade>(provider => 
+        services.AddScoped<IComplianceModule>(provider => 
         {
             // This would normally be implemented by a concrete class that implements IComplianceModule
             // For now, return a placeholder implementation

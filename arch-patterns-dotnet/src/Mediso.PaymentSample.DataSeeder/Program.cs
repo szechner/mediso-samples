@@ -1,6 +1,5 @@
 using System.CommandLine;
 using System.CommandLine.Builder;
-using System.CommandLine.Invocation;
 using System.CommandLine.Parsing;
 using System.Diagnostics;
 using Mediso.PaymentSample.DataSeeder.Configuration;
@@ -10,7 +9,6 @@ using Mediso.PaymentSample.SharedKernel.Tracing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Serilog;
 
 namespace Mediso.PaymentSample.DataSeeder;

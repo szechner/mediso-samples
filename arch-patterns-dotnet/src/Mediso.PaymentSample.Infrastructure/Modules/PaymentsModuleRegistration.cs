@@ -1,3 +1,4 @@
+using Mediso.PaymentSample.Application.Modules.Payments;
 using Mediso.PaymentSample.SharedKernel.Modules;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,12 +18,7 @@ public sealed class PaymentsModuleRegistration : IModuleRegistration
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
         // Register payment module facade using existing domain interface
-        services.AddScoped<IPaymentModuleFacade>(provider => 
-        {
-            // This would normally be implemented by a concrete class that implements IPaymentsModule
-            // For now, return a placeholder implementation
-            throw new NotImplementedException("Payment module implementation not yet available");
-        });
+        services.AddScoped<IPaymentModule, PaymentsModule>();
         
         // Configure payment module settings if needed
         var paymentSettings = configuration.GetSection("PaymentModule");

@@ -323,7 +323,7 @@ public class BogusSampleDataService : ISampleDataService
         try
         {
             // Use -1 for new streams in Marten (indicates no existing events)
-            await eventStore.AppendEventsAsync(paymentId, -1, events, cancellationToken);
+            await eventStore.AppendEventsAsync(paymentId, -1, events, Guid.NewGuid().ToString("D"), cancellationToken);
         }
         catch (Exception ex)
         {

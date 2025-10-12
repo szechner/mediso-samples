@@ -13,8 +13,9 @@ public interface IEventStore : IDisposable
     /// <param name="streamId">The unique identifier for the event stream</param>
     /// <param name="expectedVersion">The expected version for optimistic concurrency control</param>
     /// <param name="events">The domain events to append</param>
+    /// <param name="correlationId">CorrelationId</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    Task AppendEventsAsync(Guid streamId, long expectedVersion, IEnumerable<IDomainEvent> events, CancellationToken cancellationToken = default);
+    Task AppendEventsAsync(Guid streamId, long expectedVersion, IEnumerable<IDomainEvent> events, string correlationId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets events from a stream starting from a specific version
@@ -39,6 +40,8 @@ public interface IEventStore : IDisposable
     /// </summary>
     /// <typeparam name="T">The aggregate root type</typeparam>
     /// <param name="aggregate">The aggregate to save</param>
+    /// <param name="correlationId">CorrelationId</param>
+    /// <param name="header">Metadata header</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    Task SaveAggregateAsync<T>(T aggregate, CancellationToken cancellationToken = default) where T : class, IAggregateRoot;
+    Task SaveAggregateAsync<T>(T aggregate, string correlationId, (string Key, object? Value)? header = null , CancellationToken cancellationToken = default) where T : class, IAggregateRoot;
 }

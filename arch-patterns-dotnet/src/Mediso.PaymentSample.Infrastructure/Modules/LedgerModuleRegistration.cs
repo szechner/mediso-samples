@@ -17,7 +17,7 @@ public sealed class LedgerModuleRegistration : IModuleRegistration
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
         // Register ledger module facade using existing domain interface
-        services.AddScoped<ILedgerModuleFacade>(provider => 
+        services.AddScoped<ILedgerModule>(provider => 
         {
             // This would normally be implemented by a concrete class that implements ILedgerModule
             // For now, return a placeholder implementation

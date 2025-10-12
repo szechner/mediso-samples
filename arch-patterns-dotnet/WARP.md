@@ -30,8 +30,7 @@ The system is designed around **6 core domains**:
 
 - ✅ **.NET 8** - Primary framework
 - ✅ **PostgreSQL + Marten 8.11.0** - Event store and projections
-- ✅ **WolverineFx 4.12.2** - SAGA orchestration and message handling
-- ✅ **MessagePipe 1.8.1** - CQRS implementation
+- ✅ **WolverineFx 4.12.2** - SAGA orchestration, message handling, CQRS
 - ✅ **OpenTelemetry.Extensions.Hosting 1.12.0** - Distributed tracing
 - ✅ **Serilog.AspNetCore 9.0.0** - Structured logging
 - ✅ **Polly (via Marten)** - Resilience patterns (circuit breaker, retry)

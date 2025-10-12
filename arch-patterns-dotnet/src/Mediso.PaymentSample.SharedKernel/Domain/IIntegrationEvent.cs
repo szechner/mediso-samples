@@ -1,5 +1,3 @@
-using System;
-
 namespace Mediso.PaymentSample.SharedKernel.Domain;
 
 /// <summary>

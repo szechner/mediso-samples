@@ -17,7 +17,7 @@ public sealed class AccountsModuleRegistration : IModuleRegistration
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
         // Register account module facade using existing domain interface
-        services.AddScoped<IAccountModuleFacade>(provider => 
+        services.AddScoped<IAccountModule>(provider => 
         {
             // This would normally be implemented by a concrete class that implements IAccountsModule
             // For now, return a placeholder implementation

@@ -1,5 +1,4 @@
 using System.Diagnostics.Metrics;
-using Mediso.PaymentSample.Domain.Payments;
 
 namespace Mediso.PaymentSample.Infrastructure.Monitoring;
 

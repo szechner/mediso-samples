@@ -53,6 +53,10 @@ public static class TracingConstants
         $"{ServiceName}.Infrastructure", 
         ServiceVersion);
 
+    // Common tag constants for backward compatibility
+    public const string CorrelationId = "correlation.id";
+    public const string IdempotencyKey = "idempotency.key";
+    
     // Tag names for consistent tagging across the application
     public static class Tags
     {
@@ -66,6 +70,7 @@ public static class TracingConstants
         public const string EventType = "event.type";
         public const string UserId = "user.id";
         public const string CorrelationId = "correlation.id";
+        public const string IdempotencyKey = "idempotency.key";
         public const string AggregateId = "aggregate.id";
         public const string AggregateType = "aggregate.type";
         public const string AggregateVersion = "aggregate.version";

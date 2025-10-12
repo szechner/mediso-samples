@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.*" />
-    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.12.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.4" />
     
     <!-- Logging -->
@@ -21,15 +20,8 @@
     <PackageReference Include="Serilog.Enrichers.Span" Version="3.1.0" />
     
     <!-- OpenTelemetry -->
-    <PackageReference Include="OpenTelemetry" Version="1.12.0" />
-    <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.12.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.12.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.12.0" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.SqlClient" Version="1.12.0-beta.3" />
-    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.12.0" />
-    <PackageReference Include="OpenTelemetry.Exporter.Jaeger" Version="1.5.1" />
-    <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.12.0" />
     <PackageReference Include="Npgsql.OpenTelemetry" Version="9.0.2" />
+    <PackageReference Include="WolverineFx.Http" Version="4.12.2" />
   </ItemGroup>
 
   <ItemGroup>

@@ -40,7 +40,7 @@ Mediso.PaymentSample.sln - Hlavní solution soubor s 8 projekty
 #### ⚡ **Mediso.PaymentSample.Application**
 - **Účel**: Use cases a aplikační logika (CQRS)
 - **Závislosti**: Domain
-- **Technologie**: MessagePipe pro CQRS
+- **Technologie**: Wolverine pro CQRS
 - **Obsahuje**:
   - Command handlers (CreatePaymentCommand, CancelPaymentCommand)
   - Query handlers (GetPaymentQuery, GetAccountBalanceQuery)
@@ -118,8 +118,7 @@ Domain → SharedKernel
 ### Technologický stack
 - **.NET 8** - Hlavní framework
 - **PostgreSQL + Marten** - Event store a document DB
-- **WolverineFx** - Message handling a SAGA
-- **MessagePipe** - In-process CQRS
+- **WolverineFx** - Message handling, SAGA, CQRS
 - **Serilog** - Strukturované logování
 - **OpenTelemetry** - Distributed tracing
 - **NUnit + FakeItEasy** - Testování

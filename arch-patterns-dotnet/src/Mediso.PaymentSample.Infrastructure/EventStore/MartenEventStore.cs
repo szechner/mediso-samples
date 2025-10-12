@@ -1,13 +1,13 @@
 using System.Diagnostics;
 using Marten;
+using Microsoft.Extensions.Logging;
 using Mediso.PaymentSample.SharedKernel.Abstractions;
 using Mediso.PaymentSample.SharedKernel.Domain;
 using Mediso.PaymentSample.SharedKernel.Tracing;
-using Microsoft.Extensions.Logging;
 
 namespace Mediso.PaymentSample.Infrastructure.EventStore;
 
-public class MartenEventStore : IEventStore
+public class MartenEventStore : IEventStore, IDisposable
 {
     private readonly IDocumentSession _session;
     private readonly ILogger<MartenEventStore> _logger;
@@ -19,52 +19,77 @@ public class MartenEventStore : IEventStore
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task AppendEventsAsync(Guid streamId, long expectedVersion, IEnumerable<IDomainEvent> events, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Přidá eventy do streamu s ochranou proti kolizi verzí.
+    /// Pokud expectedVersion == -1 nebo není známá, zjistí se verze streamu z DB.
+    /// Pro nový stream použije StartStream(...).
+    /// </summary>
+    public async Task AppendEventsAsync(
+        Guid streamId,
+        long expectedVersion,
+        IEnumerable<IDomainEvent> events,
+        string correlationId,
+        CancellationToken cancellationToken = default)
     {
+        if (events is null) throw new ArgumentNullException(nameof(events));
+        var eventArray = events as IDomainEvent[] ?? events.ToArray();
         using var activity = ActivitySource.StartActivity("EventStore.AppendEvents");
         activity?.SetTag(TracingConstants.Tags.StreamId, streamId);
         activity?.SetTag(TracingConstants.Tags.ExpectedVersion, expectedVersion);
-        activity?.SetTag(TracingConstants.Tags.EventCount, events.Count());
+        foreach (var (evt, index) in eventArray.Select((e, i) => (e, i)))
+        {
+            activity?.SetTag($"{TracingConstants.Tags.Event}.{index}.Type", evt.GetType().Name);
+        }
+
+        _session.CorrelationId = correlationId;
 
         try
         {
-            _logger.LogInformation(
-                "Appending {EventCount} events to stream {StreamId} at expected version {ExpectedVersion}",
-                events.Count(), streamId, expectedVersion);
+            _logger.LogInformation("Appending {Count} event(s) to stream {StreamId}. ExpectedVersion={ExpectedVersion}",
+                eventArray.Length, streamId, expectedVersion);
 
-            var eventArray = events.ToArray();
-            foreach (var (evt, index) in eventArray.Select((e, i) => (e, i)))
+            for (var i = 0; i < eventArray.Length; i++)
+                activity?.SetTag($"{TracingConstants.Tags.Event}.{i}.Type", eventArray[i].GetType().Name);
+
+            var state = await _session.Events.FetchStreamStateAsync(streamId, cancellationToken);
+
+            if (expectedVersion >= 0 && (state?.Version ?? 0) != expectedVersion)
             {
-                activity?.SetTag($"{TracingConstants.Tags.Event}.{index}.Type", evt.GetType().Name);
+                throw new InvalidOperationException($"Concurrency conflict: expected {expectedVersion}, actual {(state?.Version ?? 0)} for stream {streamId}");
             }
 
-            // For new streams (expectedVersion -1), use Append without version check
-            // For existing streams, use Append with expected version for optimistic concurrency
-            if (expectedVersion == -1)
+
+            if ((expectedVersion < 0 && (state == null || state.Version == 0)) ||
+                (expectedVersion == 0 && (await _session.Events.FetchStreamStateAsync(streamId, cancellationToken))?.Version == 0))
             {
-                _session.Events.Append(streamId, eventArray);
+                // nový stream
+                _session.Events.StartStream(streamId, eventArray);
             }
             else
             {
-                _session.Events.Append(streamId, expectedVersion, eventArray);
+                var versionToUse = expectedVersion >= 0
+                    ? expectedVersion
+                    : (state!.Version); // state.Version = aktuální počet persistovaných eventů
+
+                _session.Events.Append(streamId, versionToUse, eventArray);
             }
+
             await _session.SaveChangesAsync(cancellationToken);
 
-            _logger.LogInformation(
-                "Successfully appended {EventCount} events to stream {StreamId}",
-                events.Count(), streamId);
+            _logger.LogInformation("Appended {Cnt} event(s) to stream {StreamId}", eventArray.Length, streamId);
         }
         catch (Exception ex)
         {
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-            _logger.LogError(ex,
-                "Failed to append events to stream {StreamId} at expected version {ExpectedVersion}",
-                streamId, expectedVersion);
+            _logger.LogError(ex, "Failed to append events to stream {StreamId}", streamId);
             throw;
         }
     }
 
-    public async Task<IEnumerable<IDomainEvent>> GetEventsAsync(Guid streamId, long fromVersion = 0, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<IDomainEvent>> GetEventsAsync(
+        Guid streamId,
+        long fromVersion = 0,
+        CancellationToken cancellationToken = default)
     {
         using var activity = ActivitySource.StartActivity("EventStore.GetEvents");
         activity?.SetTag(TracingConstants.Tags.StreamId, streamId);
@@ -72,32 +97,25 @@ public class MartenEventStore : IEventStore
 
         try
         {
-            _logger.LogInformation(
-                "Retrieving events from stream {StreamId} starting from version {FromVersion}",
-                streamId, fromVersion);
+            _logger.LogInformation("Retrieving events from stream {StreamId} from version {FromVersion}", streamId, fromVersion);
 
-            var events = await _session.Events.FetchStreamAsync(streamId, fromVersion);
-            var domainEvents = events.Select(e => e.Data).Cast<IDomainEvent>().ToArray();
+            var events = await _session.Events.FetchStreamAsync(streamId, fromVersion, token: cancellationToken);
+            var domainEvents = events.Select(e => e.Data).OfType<IDomainEvent>().ToArray();
 
             activity?.SetTag(TracingConstants.Tags.EventCount, domainEvents.Length);
-
-            _logger.LogInformation(
-                "Retrieved {EventCount} events from stream {StreamId}",
-                domainEvents.Length, streamId);
+            _logger.LogInformation("Retrieved {Cnt} event(s) from stream {StreamId}", domainEvents.Length, streamId);
 
             return domainEvents;
         }
         catch (Exception ex)
         {
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-            _logger.LogError(ex,
-                "Failed to retrieve events from stream {StreamId} starting from version {FromVersion}",
-                streamId, fromVersion);
+            _logger.LogError(ex, "Failed to retrieve events from stream {StreamId}", streamId);
             throw;
         }
     }
 
-    public async Task<T?> LoadAggregateAsync<T>(Guid aggregateId, CancellationToken cancellationToken = default) 
+    public async Task<T?> LoadAggregateAsync<T>(Guid aggregateId, CancellationToken cancellationToken = default)
         where T : class, IAggregateRoot
     {
         using var activity = ActivitySource.StartActivity("EventStore.LoadAggregate");
@@ -106,24 +124,19 @@ public class MartenEventStore : IEventStore
 
         try
         {
-            _logger.LogInformation(
-                "Loading aggregate {AggregateType} with ID {AggregateId}",
-                typeof(T).Name, aggregateId);
+            _logger.LogInformation("Loading aggregate {Agg} with ID {Id}", typeof(T).Name, aggregateId);
 
-            var aggregate = await _session.Events.AggregateStreamAsync<T>(aggregateId);
+            var aggregate = await _session.Events.AggregateStreamAsync<T>(aggregateId, token: cancellationToken);
 
             if (aggregate != null)
             {
                 activity?.SetTag(TracingConstants.Tags.AggregateVersion, aggregate.Version);
-                _logger.LogInformation(
-                    "Successfully loaded aggregate {AggregateType} with ID {AggregateId} at version {Version}",
-                    typeof(T).Name, aggregateId, aggregate.Version);
+                _logger.LogInformation("Loaded {Agg} {Id} at version {Ver}. Uncommitted={Unc}",
+                    typeof(T).Name, aggregateId, aggregate.Version, aggregate.GetUncommittedEvents().Count());
             }
             else
             {
-                _logger.LogWarning(
-                    "Aggregate {AggregateType} with ID {AggregateId} not found",
-                    typeof(T).Name, aggregateId);
+                _logger.LogWarning("{Agg} {Id} not found", typeof(T).Name, aggregateId);
             }
 
             return aggregate;
@@ -131,75 +144,86 @@ public class MartenEventStore : IEventStore
         catch (Exception ex)
         {
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-            _logger.LogError(ex,
-                "Failed to load aggregate {AggregateType} with ID {AggregateId}",
-                typeof(T).Name, aggregateId);
+            _logger.LogError(ex, "Failed to load aggregate {Agg} {Id}", typeof(T).Name, aggregateId);
             throw;
         }
     }
 
-    public async Task SaveAggregateAsync<T>(T aggregate, CancellationToken cancellationToken = default) 
+    /// <summary>
+    /// Uloží uncommitted eventy agregátu do jeho streamu s ochranou proti kolizi verzí.
+    /// </summary>
+    public async Task SaveAggregateAsync<T>(
+        T aggregate,
+        string correlationId,
+        (string Key, object? Value)? header = null,
+        CancellationToken cancellationToken = default)
         where T : class, IAggregateRoot
     {
+        if (aggregate is null) throw new ArgumentNullException(nameof(aggregate));
+
         using var activity = ActivitySource.StartActivity("EventStore.SaveAggregate");
         activity?.SetTag(TracingConstants.Tags.AggregateId, aggregate.Id);
         activity?.SetTag(TracingConstants.Tags.AggregateType, typeof(T).Name);
         activity?.SetTag(TracingConstants.Tags.AggregateVersion, aggregate.Version);
 
-        var uncommittedEvents = aggregate.GetUncommittedEvents().ToArray();
-        activity?.SetTag(TracingConstants.Tags.EventCount, uncommittedEvents.Length);
+        var uncommitted = aggregate.GetUncommittedEvents().ToArray();
+        activity?.SetTag(TracingConstants.Tags.EventCount, uncommitted.Length);
+
+        _session.CorrelationId = correlationId;
+        
+        if (header is { Value: { } hv })
+        {
+            _session.SetHeader(header.Value.Key, hv); // ✔ předáváme skutečnou hodnotu
+        }
 
         try
         {
-            if (uncommittedEvents.Length == 0)
+            if (uncommitted.Length == 0)
             {
-                _logger.LogInformation(
-                    "No uncommitted events to save for aggregate {AggregateType} with ID {AggregateId}",
-                    typeof(T).Name, aggregate.Id);
+                _logger.LogInformation("No uncommitted events for {Agg} {Id}", typeof(T).Name, aggregate.Id);
                 return;
             }
 
-            _logger.LogInformation(
-                "Saving aggregate {AggregateType} with ID {AggregateId} - {EventCount} uncommitted events",
-                typeof(T).Name, aggregate.Id, uncommittedEvents.Length);
-
-            foreach (var (evt, index) in uncommittedEvents.Select((e, i) => (e, i)))
+            for (var i = 0; i < uncommitted.Length; i++)
             {
-                activity?.SetTag($"{TracingConstants.Tags.Event}.{index}.Type", evt.GetType().Name);
+                activity?.SetTag($"{TracingConstants.Tags.Event}.{i}.Type", uncommitted[i].GetType().Name);
             }
 
-            // If this is a brand new stream (no persisted events yet), start the stream
-            var persistedVersion = aggregate.Version - uncommittedEvents.Length;
-            if (persistedVersion <= 0)
+            var state = await _session.Events.FetchStreamStateAsync(aggregate.Id, cancellationToken);
+
+                var lastPersistedVersion = aggregate.Version - uncommitted.Length;
+            
+            
+            if (state == null)
             {
-                _session.Events.StartStream(aggregate.Id, uncommittedEvents);
+                _logger.LogInformation("Starting new stream for {Agg} {Id}", typeof(T).Name, aggregate.Id);
+                _session.Events.StartStream(aggregate.Id, uncommitted);
             }
             else
             {
-                // For existing streams, append with optimistic concurrency
-                _session.Events.Append(aggregate.Id, persistedVersion, uncommittedEvents);
+                // Append s očekávanou verzí = aktuální verze v DB
+                _logger.LogInformation("Appending {Count} event(s) to {Aggregate} {Id} at expected version {Ver}",
+                    uncommitted.Length, typeof(T).Name, aggregate.Id, state.Version);
+
+                var stream = await _session.Events.FetchForWriting<T>(aggregate.Id, cancellationToken);
+                
+                stream.AppendMany(uncommitted);
             }
 
             await _session.SaveChangesAsync(cancellationToken);
 
+            // úspěch → označ eventy jako commitnuté v agregátu
             aggregate.MarkEventsAsCommitted();
 
-            _logger.LogInformation(
-                "Successfully saved aggregate {AggregateType} with ID {AggregateId}",
-                typeof(T).Name, aggregate.Id);
+            _logger.LogInformation("Saved {Agg} {Id}", typeof(T).Name, aggregate.Id);
         }
         catch (Exception ex)
         {
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-            _logger.LogError(ex,
-                "Failed to save aggregate {AggregateType} with ID {AggregateId}",
-                typeof(T).Name, aggregate.Id);
+            _logger.LogError(ex, "Failed to save aggregate {Agg} {Id}", typeof(T).Name, aggregate.Id);
             throw;
         }
     }
 
-    public void Dispose()
-    {
-        _session?.Dispose();
-    }
+    public void Dispose() => _session?.Dispose();
 }

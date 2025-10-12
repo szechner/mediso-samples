@@ -40,7 +40,7 @@ public abstract class Aggregate<TId> : IAggregateRoot
     protected abstract void When(IDomainEvent @event);
     
     /// <summary>
-    /// Converts the strongly-typed ID to a Guid for compatibility
+    /// Attempts to convert the ID to a Guid using various strategies
     /// </summary>
     private static Guid? TryConvertToGuid(TId id)
     {

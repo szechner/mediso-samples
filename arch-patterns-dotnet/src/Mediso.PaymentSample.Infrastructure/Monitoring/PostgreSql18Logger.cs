@@ -51,6 +51,7 @@ public class PostgreSql18SessionLogger : IMartenSessionLogger
         using var activity = ActivitySource.StartActivity("PostgreSQL18.Query.Success");
         activity?.SetTag("postgresql.version", "18");
         activity?.SetTag("postgresql.command.type", GetCommandType(command.CommandText));
+        activity?.SetTag("postgresql.command.text", command.CommandText);
         activity?.SetTag("postgresql.duration_ms", duration);
         activity?.SetTag("postgresql.parameters", command.Parameters.Count);
         activity?.SetTag("postgresql.command_hash", command.CommandText.GetHashCode());
@@ -89,7 +90,8 @@ public class PostgreSql18SessionLogger : IMartenSessionLogger
         activity?.SetTag("postgresql.error.message", ex.Message);
         activity?.SetTag("postgresql.error.type", ex.GetType().Name);
         activity?.SetTag("postgresql.command_hash", command.CommandText.GetHashCode());
-
+        activity?.SetTag($"postgresql.command..text", command.CommandText);
+        
         _logger?.LogError(ex,
             "PostgreSQL query failed after {Duration}ms - {CommandType} - Error: {ErrorType}",
             duration, GetCommandType(command.CommandText), ex.GetType().Name);
@@ -149,6 +151,7 @@ public class PostgreSql18SessionLogger : IMartenSessionLogger
         using var activity = ActivitySource.StartActivity("PostgreSQL18.Query.BeforeExecute");
         activity?.SetTag("postgresql.version", "18");
         activity?.SetTag("postgresql.command.type", GetCommandType(command.CommandText));
+        activity?.SetTag("postgresql.command.text", command.CommandText);
         activity?.SetTag("postgresql.parameters", command.Parameters.Count);
         activity?.SetTag("postgresql.query_id", queryId);
 
@@ -166,7 +169,13 @@ public class PostgreSql18SessionLogger : IMartenSessionLogger
         using var activity = ActivitySource.StartActivity("PostgreSQL18.Batch.Success");
         activity?.SetTag("postgresql.version", "18");
         activity?.SetTag("postgresql.batch.commands", batch.BatchCommands.Count);
-        
+
+        for (var i = 0; i < batch.BatchCommands.Count; i++)
+        {
+            var batchBatchCommand = batch.BatchCommands[i];
+            activity?.SetTag($"postgresql.batch.commands.{i}.text", batchBatchCommand.CommandText);
+        }
+
         _logger?.LogDebug(
             "PostgreSQL 18 batch completed successfully: {CommandCount} commands",
             batch.BatchCommands.Count);
@@ -179,6 +188,12 @@ public class PostgreSql18SessionLogger : IMartenSessionLogger
         activity?.SetTag("postgresql.version", "18");
         activity?.SetTag("postgresql.batch.commands", batch.BatchCommands.Count);
         activity?.SetTag("postgresql.error.message", ex.Message);
+        
+        for (var i = 0; i < batch.BatchCommands.Count; i++)
+        {
+            var batchBatchCommand = batch.BatchCommands[i];
+            activity?.SetTag($"postgresql.batch.commands.{i}.text", batchBatchCommand.CommandText);
+        }
         
         _logger?.LogError(ex,
             "PostgreSQL 18 batch failed: {CommandCount} commands - Error: {ErrorType}",
@@ -200,6 +215,12 @@ public class PostgreSql18SessionLogger : IMartenSessionLogger
         using var activity = ActivitySource.StartActivity("PostgreSQL18.Batch.BeforeExecute");
         activity?.SetTag("postgresql.version", "18");
         activity?.SetTag("postgresql.batch.commands", batch.BatchCommands.Count);
+        
+        for (var i = 0; i < batch.BatchCommands.Count; i++)
+        {
+            var batchBatchCommand = batch.BatchCommands[i];
+            activity?.SetTag($"postgresql.batch.commands.{i}.text", batchBatchCommand.CommandText);
+        }
         
         _logger?.LogDebug(
             "PostgreSQL 18 - Preparing batch execution: {CommandCount} commands",

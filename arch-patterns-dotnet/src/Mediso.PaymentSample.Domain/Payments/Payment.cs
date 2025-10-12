@@ -1,8 +1,6 @@
 using Mediso.PaymentSample.Domain.Common;
 using Mediso.PaymentSample.SharedKernel.Domain;
 using Mediso.PaymentSample.SharedKernel.Tracing;
-using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 
 namespace Mediso.PaymentSample.Domain.Payments;
 
@@ -15,27 +13,27 @@ public sealed class Payment : Aggregate<PaymentId>
     /// The payment amount and currency
     /// </summary>
     public Money Amount { get; private set; }
-    
+
     /// <summary>
     /// The account ID of the party making the payment
     /// </summary>
     public AccountId PayerAccountId { get; private set; } = default!;
-    
+
     /// <summary>
     /// The account ID of the party receiving the payment
     /// </summary>
     public AccountId PayeeAccountId { get; private set; } = default!;
-    
+
     /// <summary>
     /// Reference or description for the payment
     /// </summary>
     public string Reference { get; private set; } = string.Empty;
-    
+
     /// <summary>
     /// Current state of the payment in its lifecycle
     /// </summary>
     public PaymentState State { get; private set; } = PaymentState.Requested;
-    
+
     /// <summary>
     /// ID of the funds reservation associated with this payment, if any
     /// </summary>
@@ -44,10 +42,9 @@ public sealed class Payment : Aggregate<PaymentId>
     /// <summary>
     /// Private constructor for ORM and event sourcing reconstruction
     /// </summary>
-    private Payment()
+    private  Payment()
     {
     }
-
 
     /// <summary>
     /// Creates a new payment with the specified details
@@ -66,15 +63,15 @@ public sealed class Payment : Aggregate<PaymentId>
         activity?.SetTag(TracingConstants.Tags.PaymentAmount, amount.Amount.ToString());
         activity?.SetTag(TracingConstants.Tags.PaymentCurrency, amount.Currency.Code);
         activity?.SetTag(TracingConstants.Tags.OperationType, "create");
-        
+
         if (payer.Value == payee.Value)
             throw new DomainException("Payer and Payee must differ");
 
         var payment = new Payment();
         payment.Raise(new PaymentRequested(id, amount.EnsurePositive(), payer, payee, reference));
-        
+
         activity?.SetTag(TracingConstants.Tags.PaymentState, PaymentState.Requested.ToString());
-        
+
         return payment;
     }
 
@@ -90,7 +87,7 @@ public sealed class Payment : Aggregate<PaymentId>
         activity?.SetTag(TracingConstants.Tags.PaymentId, Id.ToString());
         activity?.SetTag(TracingConstants.Tags.PaymentState, State.ToString());
         activity?.SetTag(TracingConstants.Tags.OperationType, "aml-passed");
-        
+
         EnsureState(PaymentState.Requested, PaymentState.Flagged, PaymentState.Released);
         Raise(new AMLPassed(Id, ruleSetVersion));
     }
@@ -132,7 +129,7 @@ public sealed class Payment : Aggregate<PaymentId>
         activity?.SetTag(TracingConstants.Tags.PaymentState, State.ToString());
         activity?.SetTag(TracingConstants.Tags.ReservationId, reservationId.ToString());
         activity?.SetTag(TracingConstants.Tags.OperationType, "reserve-funds");
-        
+
         EnsureState(PaymentState.Requested, PaymentState.Released);
         Raise(new FundsReserved(Id, reservationId, Amount));
     }
@@ -162,7 +159,7 @@ public sealed class Payment : Aggregate<PaymentId>
         activity?.SetTag(TracingConstants.Tags.PaymentState, State.ToString());
         activity?.SetTag(TracingConstants.Tags.OperationType, "journal");
         activity?.SetTag("entries.count", entries.Count.ToString());
-        
+
         EnsureState(PaymentState.Reserved);
         if (entries.Count == 0) throw new DomainException("Journal requires entries");
         Raise(new PaymentJournaled(Id, entries));
@@ -184,7 +181,7 @@ public sealed class Payment : Aggregate<PaymentId>
         activity?.SetTag("settlement.channel", channel);
         if (externalRef != null)
             activity?.SetTag("settlement.external_ref", externalRef);
-        
+
         EnsureState(PaymentState.Journaled);
         Raise(new PaymentSettled(Id, channel, externalRef));
     }
@@ -222,7 +219,6 @@ public sealed class Payment : Aggregate<PaymentId>
         // Can fail from multiple states (e.g., settlement failure)
         Raise(new PaymentFailed(Id, reason));
     }
-
 
     /// <summary>
     /// Handles domain events to update payment state
@@ -279,6 +275,9 @@ public sealed class Payment : Aggregate<PaymentId>
             case PaymentFailed:
                 State = PaymentState.Failed;
                 break;
+
+            default:
+                throw new DomainException($"Unhandled event: {@event}");
         }
     }
 
@@ -290,7 +289,7 @@ public sealed class Payment : Aggregate<PaymentId>
     }
 
     #region Marten Event Sourcing Apply Methods
-    
+
     public void Apply(PaymentRequested @event) => When(@event);
     public void Apply(AMLPassed @event) => When(@event);
     public void Apply(PaymentFlagged @event) => When(@event);
@@ -301,6 +300,6 @@ public sealed class Payment : Aggregate<PaymentId>
     public void Apply(PaymentCancelled @event) => When(@event);
     public void Apply(PaymentDeclined @event) => When(@event);
     public void Apply(PaymentFailed @event) => When(@event);
-    
+
     #endregion
 }

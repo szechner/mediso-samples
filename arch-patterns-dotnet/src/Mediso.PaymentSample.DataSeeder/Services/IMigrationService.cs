@@ -1,5 +1,3 @@
-using Mediso.PaymentSample.DataSeeder.Configuration;
-
 namespace Mediso.PaymentSample.DataSeeder.Services;
 
 /// <summary>

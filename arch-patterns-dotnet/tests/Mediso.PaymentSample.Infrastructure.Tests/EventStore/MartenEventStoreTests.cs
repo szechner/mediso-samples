@@ -111,7 +111,7 @@ public class MartenEventStoreTests
         // Test the method doesn't throw with a fake session
         try
         {
-            await eventStore.AppendEventsAsync(Guid.NewGuid(), 0, events);
+            await eventStore.AppendEventsAsync(Guid.NewGuid(),0, events, Guid.NewGuid().ToString("D"));
         }
         catch (Exception ex)
         {
