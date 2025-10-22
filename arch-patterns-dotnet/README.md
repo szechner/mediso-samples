@@ -6,8 +6,8 @@
 
 ## Architektura / patterny
 - CQRS
-- Mediatzor
-- Evento sourcing
+- Mediator
+- Event sourcing
 - Resilience patterns
 
 ## Přílohy

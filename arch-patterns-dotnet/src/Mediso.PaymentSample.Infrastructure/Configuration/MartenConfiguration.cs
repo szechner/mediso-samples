@@ -5,7 +5,7 @@ using JasperFx.Events.Daemon;
 using JasperFx.Resources;
 using Marten;
 using Marten.Events.Projections;
-using Mediso.PaymentSample.Application.Modules.Payments.Ports.Secondary;
+using Mediso.PaymentSample.Application.Modules.Payments.Ports;
 using Mediso.PaymentSample.Domain.Payments;
 using Mediso.PaymentSample.Infrastructure.EventStore;
 using Mediso.PaymentSample.Infrastructure.Monitoring;

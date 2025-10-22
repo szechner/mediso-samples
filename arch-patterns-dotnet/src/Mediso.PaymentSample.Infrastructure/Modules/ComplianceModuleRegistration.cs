@@ -1,4 +1,5 @@
 using Mediso.PaymentSample.SharedKernel.Modules;
+using Mediso.PaymentSample.SharedKernel.Modules.ModuleFacades.Ports;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -29,7 +30,7 @@ public sealed class ComplianceModuleRegistration : IModuleRegistration
 
     public void Configure(IServiceProvider serviceProvider)
     {
-        var logger = serviceProvider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ComplianceModuleRegistration>>();
+        var logger = serviceProvider.GetRequiredService<ILogger<ComplianceModuleRegistration>>();
         logger.LogInformation("Compliance module configured successfully");
     }
 

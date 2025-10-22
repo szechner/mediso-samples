@@ -1,4 +1,3 @@
-using JasperFx.Resources;
 using Serilog;
 using Serilog.Enrichers.Span;
 
@@ -10,7 +9,6 @@ using Mediso.PaymentSample.Application.Configuration;
 using Mediso.PaymentSample.Infrastructure.DIExtensions;
 using Mediso.PaymentSample.Infrastructure.Modules;
 using Mediso.PaymentSample.SharedKernel.Modules;
-using Microsoft.AspNetCore.Routing.Constraints;
 
 var builder = WebApplication.CreateBuilder(args);
 

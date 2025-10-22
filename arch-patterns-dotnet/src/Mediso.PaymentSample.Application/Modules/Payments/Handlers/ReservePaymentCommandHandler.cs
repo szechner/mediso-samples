@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using Mediso.PaymentSample.Application.Common.Resilience;
 using Mediso.PaymentSample.Application.Modules.Payments.Contracts;
-using Mediso.PaymentSample.Application.Modules.Payments.Ports.Primary;
+using Mediso.PaymentSample.Application.Modules.Payments.Ports;
 using Mediso.PaymentSample.Domain.Common;
 using Mediso.PaymentSample.Domain.Payments;
 using Mediso.PaymentSample.SharedKernel.Abstractions;
@@ -99,7 +99,7 @@ public class ReservePaymentCommandHandler : IReservePaymentHandler
                 activity?.SetTag("fraud.risk_score", command.FraudDetection.Score);
 
                 // Domain business rules: reject high-risk payments
-                if (command.FraudDetection.RiskLevel == Contracts.RiskLevel.Critical)
+                if (command.FraudDetection.RiskLevel == RiskLevel.Critical)
                 {
                     var rejectionReason = "Payment rejected due to high fraud risk";
                     payment.Decline(rejectionReason);

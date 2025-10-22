@@ -15,7 +15,7 @@ public interface IFundsReservationService
 
 public interface ILedgerService
 {
-    Task<IReadOnlyList<Mediso.PaymentSample.Domain.Payments.LedgerEntry>> JournalAsync(
+    Task<IReadOnlyList<Payments.LedgerEntry>> JournalAsync(
         PaymentId paymentId,
         AccountId debit,
         AccountId credit,
@@ -39,6 +39,6 @@ public interface INotificationPublisher
 public interface IPaymentEventStore
 {
 // Persistence boundary for ES aggregate
-    Task AppendAsync(Mediso.PaymentSample.Domain.Payments.Payment payment, CancellationToken ct);
-    Task<Mediso.PaymentSample.Domain.Payments.Payment?> LoadAsync(PaymentId id, CancellationToken ct);
+    Task AppendAsync(Payments.Payment payment, CancellationToken ct);
+    Task<Payments.Payment?> LoadAsync(PaymentId id, CancellationToken ct);
 }

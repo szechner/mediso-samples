@@ -1,19 +1,15 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Wolverine;
-using Mediso.PaymentSample.Application.Modules.Payments.UseCases;
-using Mediso.PaymentSample.Application.Modules.Payments.Ports.Primary;
 using Mediso.PaymentSample.Application.Common.Resilience;
 using FluentValidation;
-using System.Reflection;
 using JasperFx.Resources;
 using Mediso.PaymentSample.Application.Common;
 using Mediso.PaymentSample.Application.Modules.FraudDetection.Handlers;
 using Mediso.PaymentSample.Application.Modules.Payments.Handlers;
-using Mediso.PaymentSample.Application.Modules.Payments.Sagas;
+using Mediso.PaymentSample.Application.Modules.Payments.Ports;
 using Mediso.PaymentSample.SharedKernel.Modules;
 using Wolverine.ErrorHandling;
-using Wolverine.RDBMS;
 
 namespace Mediso.PaymentSample.Application.Configuration;
 
@@ -29,9 +25,6 @@ public static class ApplicationConfiguration
         
         // Add resilience pipeline provider
             services.AddSingleton<IResiliencePipelineProvider, PaymentResiliencePipelineProvider>();
-        
-        // Register payment query handlers
-        services.AddScoped<_PaymentQueryHandlers>();
         
         // Register fraud detection services
         services.AddScoped<IFraudDetectionService, MockFraudDetectionService>();

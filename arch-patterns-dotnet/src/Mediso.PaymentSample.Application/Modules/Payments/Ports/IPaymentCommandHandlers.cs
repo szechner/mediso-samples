@@ -1,6 +1,6 @@
 using Mediso.PaymentSample.Application.Modules.Payments.Contracts;
 
-namespace Mediso.PaymentSample.Application.Modules.Payments.Ports.Primary;
+namespace Mediso.PaymentSample.Application.Modules.Payments.Ports;
 
 /// <summary>
 /// Primary port for payment command handling (driving adapter interface).

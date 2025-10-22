@@ -1,5 +1,6 @@
 using Mediso.PaymentSample.Domain.Common;
 using Mediso.PaymentSample.Domain.Payments;
+using Mediso.PaymentSample.SharedKernel.Modules.ModuleFacades.Contracts;
 
 namespace Mediso.PaymentSample.Application.Modules.Payments.Contracts;
 
@@ -18,18 +19,14 @@ public record GetPaymentStatusQuery
     public required string? CorrelationId { get; init; }
 }
 
+
+
 /// <summary>
 /// Response for payment status queries using correlation ID.
 /// Provides information about the current state of asynchronous payment processing.
 /// </summary>
-public record PaymentSagaStatusResponse
+public record PaymentSagaStatusResponse : PaymentStatusResponse
 {
-    /// <summary>Correlation ID used for tracking.</summary>
-    public string CorrelationId { get; init; } = string.Empty;
-
-    /// <summary>Current processing status.</summary>
-    public string Status { get; init; } = string.Empty;
-
     /// <summary>Payment ID if available (after processing starts).</summary>
     public string? PaymentId { get; init; }
 
@@ -49,14 +46,8 @@ public record PaymentSagaStatusResponse
 /// <summary>
 /// Query to get final payment status by correlation ID after completion.
 /// </summary>
-public record PaymentCompletedStatusResponse
+public record PaymentCompletedStatusResponse : PaymentStatusResponse
 {
-    /// <summary>Correlation ID used for tracking.</summary>
-    public string CorrelationId { get; init; } = string.Empty;
-
-    /// <summary>Current processing status.</summary>
-    public string Status { get; init; } = string.Empty;
-
     /// <summary>Payment ID if available (after processing starts).</summary>
     public Guid[] PaymentIds { get; init; } = [];
 }

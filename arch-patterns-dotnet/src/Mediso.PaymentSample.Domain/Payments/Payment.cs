@@ -39,10 +39,27 @@ public sealed class Payment : Aggregate<PaymentId>
     /// </summary>
     public ReservationId? ReservationId { get; private set; }
 
+
+    /// <summary>
+    /// Date and time when the payment was requested
+    /// </summary>
+    public DateTimeOffset? RequestedAt { get; private set; }
+
+    /// <summary>
+    /// Date and time when the payment was settled
+    /// </summary>
+    public DateTimeOffset? SettledAt { get; private set; }
+
+    /// <summary>
+    /// Reason for payment decline, if applicable
+    /// </summary>
+    public string? DeclinedReason { get; private set; }
+
+
     /// <summary>
     /// Private constructor for ORM and event sourcing reconstruction
     /// </summary>
-    private  Payment()
+    private Payment()
     {
     }
 
@@ -235,6 +252,7 @@ public sealed class Payment : Aggregate<PaymentId>
                 PayeeAccountId = e.PayeeAccountId;
                 Reference = e.Reference;
                 State = PaymentState.Requested;
+                RequestedAt = e.CreatedAt;
                 break;
 
 
@@ -260,16 +278,19 @@ public sealed class Payment : Aggregate<PaymentId>
                 break;
 
 
-            case PaymentSettled:
+            case PaymentSettled e:
                 State = PaymentState.Settled;
+                SettledAt = e.CreatedAt;
                 break;
 
-            case PaymentCancelled:
+            case PaymentCancelled e:
                 State = PaymentState.Declined;
+                DeclinedReason = e.By;
                 break;
 
-            case PaymentDeclined:
+            case PaymentDeclined e:
                 State = PaymentState.Declined;
+                DeclinedReason = e.Reason;
                 break;
 
             case PaymentFailed:

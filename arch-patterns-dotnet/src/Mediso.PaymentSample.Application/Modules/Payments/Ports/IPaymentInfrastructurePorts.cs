@@ -1,9 +1,8 @@
-using Mediso.PaymentSample.Domain.Payments;
 using Mediso.PaymentSample.Application.Modules.Payments.Contracts;
-
 using Mediso.PaymentSample.Domain.Common;
+using Mediso.PaymentSample.Domain.Payments;
 
-namespace Mediso.PaymentSample.Application.Modules.Payments.Ports.Secondary;
+namespace Mediso.PaymentSample.Application.Modules.Payments.Ports;
 
 /// <summary>
 /// Secondary port for payment repository operations (driven adapter interface).

@@ -21,8 +21,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.UnitTe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.IntegrationTests", "tests\Mediso.PaymentSample.IntegrationTests\Mediso.PaymentSample.IntegrationTests.csproj", "{FFC51CC5-8AC4-4CC8-8B34-3858EE93C508}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.DataSeeder", "src\Mediso.PaymentSample.DataSeeder\Mediso.PaymentSample.DataSeeder.csproj", "{DB2DC625-987B-42B8-B61F-0BF9C26EB9FA}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.Infrastructure.Tests", "tests\Mediso.PaymentSample.Infrastructure.Tests\Mediso.PaymentSample.Infrastructure.Tests.csproj", "{A8B95E28-FEF5-4D07-B89E-D19CA889FEA5}"
 EndProject
 Global
@@ -62,10 +60,6 @@ Global
 		{FFC51CC5-8AC4-4CC8-8B34-3858EE93C508}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FFC51CC5-8AC4-4CC8-8B34-3858EE93C508}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FFC51CC5-8AC4-4CC8-8B34-3858EE93C508}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DB2DC625-987B-42B8-B61F-0BF9C26EB9FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DB2DC625-987B-42B8-B61F-0BF9C26EB9FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DB2DC625-987B-42B8-B61F-0BF9C26EB9FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DB2DC625-987B-42B8-B61F-0BF9C26EB9FA}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A8B95E28-FEF5-4D07-B89E-D19CA889FEA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A8B95E28-FEF5-4D07-B89E-D19CA889FEA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A8B95E28-FEF5-4D07-B89E-D19CA889FEA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -79,7 +73,6 @@ Global
 		{9522FF32-73AE-4B3B-99A0-2D3E171E0F6B} = {DB56A39D-B0DC-4B4D-8FD8-BF679F47157F}
 		{B33B5DA8-5334-448B-A5D5-A67B840ECCE6} = {3C0E8E8D-E1FD-44B4-9E4D-9BD3BD166B3D}
 		{FFC51CC5-8AC4-4CC8-8B34-3858EE93C508} = {3C0E8E8D-E1FD-44B4-9E4D-9BD3BD166B3D}
-		{DB2DC625-987B-42B8-B61F-0BF9C26EB9FA} = {DB56A39D-B0DC-4B4D-8FD8-BF679F47157F}
 		{A8B95E28-FEF5-4D07-B89E-D19CA889FEA5} = {3C0E8E8D-E1FD-44B4-9E4D-9BD3BD166B3D}
 	EndGlobalSection
 EndGlobal

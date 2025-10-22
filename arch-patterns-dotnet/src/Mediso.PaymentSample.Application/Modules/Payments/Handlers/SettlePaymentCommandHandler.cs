@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using Mediso.PaymentSample.Application.Common.Resilience;
 using Mediso.PaymentSample.Application.Modules.Payments.Contracts;
-using Mediso.PaymentSample.Application.Modules.Payments.Ports.Primary;
+using Mediso.PaymentSample.Application.Modules.Payments.Ports;
 using Mediso.PaymentSample.Domain.Common;
 using Mediso.PaymentSample.Domain.Payments;
 using Mediso.PaymentSample.SharedKernel.Abstractions;

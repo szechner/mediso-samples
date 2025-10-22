@@ -64,4 +64,4 @@ public sealed record PaymentNotified(PaymentId PaymentId, string Channel) : IDom
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
 };
 
-public sealed record LedgerEntry(LedgerEntryId EntryId, Domain.Common.AccountId DebitAccountId, Domain.Common.AccountId CreditAccountId, Money Amount);
+public sealed record LedgerEntry(LedgerEntryId EntryId, AccountId DebitAccountId, AccountId CreditAccountId, Money Amount);

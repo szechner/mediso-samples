@@ -5,9 +5,8 @@ using Microsoft.Extensions.Logging;
 using Wolverine;
 using Mediso.PaymentSample.Domain.Common;
 using Mediso.PaymentSample.Application.Modules.Payments.Contracts;
-using Mediso.PaymentSample.Application.Modules.Payments.Ports.Primary;
 using Mediso.PaymentSample.Application.Modules.FraudDetection.Contracts;
-using Mediso.PaymentSample.SharedKernel.Domain;
+using Mediso.PaymentSample.Application.Modules.Payments.Ports;
 using Mediso.PaymentSample.SharedKernel.Tracing;
 using FraudRiskLevel = Mediso.PaymentSample.Application.Modules.FraudDetection.Contracts.RiskLevel;
 
@@ -162,13 +161,6 @@ public class PaymentProcessingSaga : Saga
             {
                 // Cancel payment due to high fraud risk
                 await CancelPaymentDueToFraudAsync(fraudResult.PaymentId, messageBus, logger, cancellationToken);
-                return;
-            }
-
-            if (fraudResult.RiskLevel == FraudRiskLevel.High)
-            {
-                // Require manual review for high-risk payments
-                await RequestManualReviewAsync(fraudResult.PaymentId, messageBus, logger, cancellationToken);
                 return;
             }
 
@@ -351,6 +343,36 @@ public class PaymentProcessingSaga : Saga
         await Task.CompletedTask;
     }
     
+    public async Task Handle(CancelPaymentCommand cancelPaymentCommand, ICancelPaymentHandler cancelPaymentHandler, IMessageBus messageBus, ILogger<PaymentProcessingSaga> logger, CancellationToken cancellationToken = default)
+    {
+        using var activity = ActivitySource.StartActivity("PaymentSaga.ManualReviewRequested");
+        activity?.SetTag("saga.id", State.CorrelationId);
+        activity?.SetTag("payment.id", cancelPaymentCommand.PaymentId.Value);
+        activity?.SetTag("cancel.category", cancelPaymentCommand.Category.ToString("G"));
+
+        logger.LogInformation(
+            "Payment {PaymentId} cancelled [CorrelationId: {CorrelationId}]",
+            cancelPaymentCommand.PaymentId, State.CorrelationId);
+        
+        State.Events.Add(new SagaEvent("CancelPaymentCommand", cancelPaymentCommand));
+        State.Status = PaymentSagaStatus.Compensating;
+        State.CurrentStep = PaymentProcessingStep.Compensating;
+        
+        _ = await cancelPaymentHandler.HandleAsync(cancelPaymentCommand, cancellationToken);
+
+        State.CurrentStep = PaymentProcessingStep.NotifyingCompletion;
+        State.Status = PaymentSagaStatus.Completed;
+        State.CompletedAt = DateTimeOffset.UtcNow;
+
+        // Send completion notifications
+        await SendCompletionNotificationsAsync(cancelPaymentCommand.PaymentId, messageBus, logger, cancellationToken);
+
+        // Mark saga as completed
+        await CompleteSagaAsync(cancelPaymentCommand.PaymentId, logger);
+        
+        await Task.CompletedTask;
+    }
+    
     public static void NotFound(PaymentSagaTimeout timeout, ILogger<PaymentProcessingSaga> log)
     {
         log.LogDebug("Timeout for saga {SagaId} ignored because saga is already completed.", timeout.PaymentProcessingSagaId);
@@ -396,33 +418,6 @@ public class PaymentProcessingSaga : Saga
 
         logger.LogWarning(
             "Payment {PaymentId} cancelled due to high fraud risk [CorrelationId: {CorrelationId}]",
-            paymentId, State.CorrelationId);
-    }
-
-    private async Task RequestManualReviewAsync(
-        PaymentId paymentId,
-        IMessageBus messageBus,
-        ILogger<PaymentProcessingSaga> logger,
-        CancellationToken cancellationToken
-    )
-    {
-        State.CurrentStep = PaymentProcessingStep.AwaitingManualReview;
-        State.Status = PaymentSagaStatus.AwaitingManualReview;
-
-        var reviewRequest = new PaymentManualReviewRequest
-        {
-            PaymentId = paymentId,
-            PaymentProcessingSagaId = Id,
-            RiskLevel = State.FraudDetectionResult?.RiskLevel ?? FraudRiskLevel.High,
-            RiskScore = State.FraudDetectionResult?.RiskScore ?? 0.8m,
-            Reason = "High fraud risk detected - manual review required"
-        };
-
-        await messageBus.SendAsync(reviewRequest);
-        State.Events.Add(new SagaEvent("ManualReviewRequested", reviewRequest));
-
-        logger.LogWarning(
-            "Payment {PaymentId} requires manual review due to high fraud risk [CorrelationId: {CorrelationId}]",
             paymentId, State.CorrelationId);
     }
 
@@ -626,17 +621,17 @@ public class PaymentProcessingSaga : Saga
     /// <summary>
     /// Maps FraudDetection RiskLevel to Contracts RiskLevel
     /// </summary>
-    private static Mediso.PaymentSample.Application.Modules.Payments.Contracts.RiskLevel MapFraudRiskLevelToContractsRiskLevel(
+    private static Contracts.RiskLevel MapFraudRiskLevelToContractsRiskLevel(
         FraudRiskLevel fraudRiskLevel
     )
     {
         return fraudRiskLevel switch
         {
-            FraudRiskLevel.Low => Mediso.PaymentSample.Application.Modules.Payments.Contracts.RiskLevel.Low,
-            FraudRiskLevel.Medium => Mediso.PaymentSample.Application.Modules.Payments.Contracts.RiskLevel.Medium,
-            FraudRiskLevel.High => Mediso.PaymentSample.Application.Modules.Payments.Contracts.RiskLevel.High,
-            FraudRiskLevel.Blocked => Mediso.PaymentSample.Application.Modules.Payments.Contracts.RiskLevel.Critical,
-            _ => Mediso.PaymentSample.Application.Modules.Payments.Contracts.RiskLevel.Medium
+            FraudRiskLevel.Low => Contracts.RiskLevel.Low,
+            FraudRiskLevel.Medium => Contracts.RiskLevel.Medium,
+            FraudRiskLevel.High => Contracts.RiskLevel.High,
+            FraudRiskLevel.Blocked => Contracts.RiskLevel.Critical,
+            _ => Contracts.RiskLevel.Medium
         };
     }
 }

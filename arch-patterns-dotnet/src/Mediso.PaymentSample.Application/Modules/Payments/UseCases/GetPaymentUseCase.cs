@@ -3,16 +3,15 @@ using Mediso.PaymentSample.Application.Modules.Payments.Contracts;
 using Mediso.PaymentSample.Domain.Payments;
 using Mediso.PaymentSample.SharedKernel.Abstractions;
 using Mediso.PaymentSample.SharedKernel.Logging;
-using Mediso.PaymentSample.SharedKernel.Modules;
+using Mediso.PaymentSample.SharedKernel.Modules.ModuleFacades.Contracts;
 using Mediso.PaymentSample.SharedKernel.Tracing;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 namespace Mediso.PaymentSample.Application.Modules.Payments.UseCases;
 
 public class GetPaymentUseCase
 {
-    public static async Task<IResult> Handle(GetPaymentQuery query,
+    public static async Task<PaymentResponse?> Handle(GetPaymentQuery query,
         IEventStore eventStore,
         ILogger<GetPaymentUseCase> logger)
     {
@@ -34,7 +33,7 @@ public class GetPaymentUseCase
             if (payment == null)
             {
                 logger.LogWithContext(LogLevel.Warning, "Payment {PaymentId} not found", context, query.PaymentId.ToString());
-                return Results.NotFound($"Payment {query.PaymentId.Value} not found");
+                return null;
             }
 
             var response = new PaymentResponse
@@ -45,20 +44,22 @@ public class GetPaymentUseCase
                 PayerAccountId = payment.PayerAccountId.Value,
                 PayeeAccountId = payment.PayeeAccountId.Value,
                 Reference = payment.Reference,
-                State = payment.State.ToString(),
-                CreatedAt = DateTimeOffset.UtcNow // You might want to get this from domain events
+                State = payment.State.ToString("G"),
+                RequestedAt = payment.RequestedAt,
+                SettledAt = payment.SettledAt,
+                DeclinedReason = payment.DeclinedReason,
             };
-
+            
             logger.LogWithContext(LogLevel.Information,
                 "Payment {PaymentId} retrieved successfully", context, query.PaymentId.ToString());
 
-            return Results.Ok(response);
+            return response;
         }
         catch (Exception ex)
         {
             logger.LogExceptionWithContext(ex, context, "Error retrieving payment {PaymentId}", query.PaymentId.ToString());
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-            return Results.Problem("An error occurred while retrieving the payment");
+            throw;
         }
     }
 }

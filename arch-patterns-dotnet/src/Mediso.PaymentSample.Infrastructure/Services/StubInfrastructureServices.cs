@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using Mediso.PaymentSample.Application.Modules.Payments.Ports.Secondary;
+using Mediso.PaymentSample.Application.Modules.Payments.Ports;
 using Mediso.PaymentSample.SharedKernel.Tracing;
 using Microsoft.Extensions.Logging;
 

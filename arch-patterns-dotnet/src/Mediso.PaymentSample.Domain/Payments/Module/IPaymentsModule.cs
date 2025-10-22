@@ -1,5 +1,4 @@
 using Mediso.PaymentSample.Domain.Common;
-using Mediso.PaymentSample.SharedKernel.Attributes;
 using Mediso.PaymentSample.SharedKernel.Domain;
 
 namespace Mediso.PaymentSample.Domain.Payments.Module;

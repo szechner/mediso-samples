@@ -1,5 +1,5 @@
 ﻿using System.Diagnostics;
-using FluentValidation;
+using System.Net;
 using Marten;
 using Mediso.PaymentSample.Application.Modules.Payments.Contracts;
 using Mediso.PaymentSample.Application.Modules.Payments.Sagas;
@@ -7,18 +7,18 @@ using Mediso.PaymentSample.Domain.Common;
 using Mediso.PaymentSample.SharedKernel.Domain;
 using Mediso.PaymentSample.SharedKernel.Logging;
 using Mediso.PaymentSample.SharedKernel.Modules;
+using Mediso.PaymentSample.SharedKernel.Modules.ModuleFacades.Contracts;
 using Mediso.PaymentSample.SharedKernel.Tracing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Net.Http.Headers;
 using Wolverine;
-using ValidationException = System.ComponentModel.DataAnnotations.ValidationException;
 
 namespace Mediso.PaymentSample.Application.Modules.Payments.UseCases;
 
 public class CreatePaymentUseCase
 {
-    public static async Task<IResult> Handle(
+    public static async Task<SharedPaymentResult> Handle(
         DeliveryMessage<CreatePaymentRequest> request,
         IHttpContextAccessor http,
         IMessageBus bus,
@@ -29,7 +29,7 @@ public class CreatePaymentUseCase
         return await Handle(request.Message, http, bus, query, logger);
     }
 
-    public static async Task<IResult> Handle(
+    public static async Task<SharedPaymentResult> Handle(
         CreatePaymentRequest request,
         IHttpContextAccessor http,
         IMessageBus bus,
@@ -64,20 +64,18 @@ public class CreatePaymentUseCase
             logger.LogWithContext(LogLevel.Debug,
                 "Request details - Reference: {Reference}, PaymentMethod: {PaymentMethod}, UserAgent: {UserAgent}, IpAddress: {IpAddress}",
                 context, request.Reference ?? string.Empty, request.PaymentMethod ?? string.Empty, userAgent ?? string.Empty, ip ?? string.Empty);
-
-            // Validate request
-            // Validate request
+            
             if (string.IsNullOrWhiteSpace(request.PayerAccountId) ||
                 string.IsNullOrWhiteSpace(request.PayeeAccountId))
             {
                 logger.LogWithContext(LogLevel.Warning, "Invalid account IDs in payment creation request", context);
-                return Results.BadRequest("Payer and Payee account IDs are required");
+                return ModuleResult.Failure<SharedPaymentResult>(HttpStatusCode.BadRequest,"Payer and Payee account IDs are required"); 
             }
 
             if (request.Amount <= 0)
             {
                 logger.LogWithContext(LogLevel.Warning, "Invalid payment amount: {Amount}", context, request.Amount);
-                return Results.BadRequest("Payment amount must be positive");
+                return ModuleResult.Failure<SharedPaymentResult>(HttpStatusCode.BadRequest, "Payment amount must be positive");
             }
             
             var saga = await query.Query<PaymentProcessingSaga>()
@@ -87,7 +85,7 @@ public class CreatePaymentUseCase
             if (saga != null)
             {
                 logger.LogWithContext(LogLevel.Warning, "Payment process already exists, CorrelationId: {PaymentCorrelationId}", context, saga.State.CorrelationId);
-                return Results.BadRequest($"Payment process already exists, CorrelationId: {saga.State.CorrelationId}");
+                return ModuleResult.Failure<SharedPaymentResult>(HttpStatusCode.Conflict, $"Payment process already exists, CorrelationId: {saga.State.CorrelationId}");
             }
 
             // Create InitiatePaymentCommand for saga orchestration
@@ -140,53 +138,27 @@ public class CreatePaymentUseCase
             {
                 logger.LogWithContext(LogLevel.Error, "Failed to publish payment workflow initiation message: {Exception} - {ExceptionDetails}",
                     context, publishEx.Message, publishEx.ToString());
-                return Results.Problem("Failed to initiate payment workflow");
+                return ModuleResult.Failure<SharedPaymentResult>(HttpStatusCode.InternalServerError,"Failed to initiate payment workflow");
             }
-
-            // Create API response for async workflow
-            var response = new PaymentResponse
-            {
-                Id = "pending",
-                Amount = request.Amount,
-                Currency = request.Currency,
-                PayerAccountId = request.PayerAccountId,
-                PayeeAccountId = request.PayeeAccountId,
-                Reference = request.Reference ?? string.Empty,
-                State = "Initiating",
-                CreatedAt = DateTimeOffset.UtcNow,
-                ProcessingStatus = "workflow-starting",
-                CorrelationId = correlationId,
-                IdempotencyKey = idempotencyKey
-            };
 
             activity?.SetTag("payment.status", "Initiating");
             activity?.SetTag("workflow.async", true);
 
-            return Results.Accepted($"/api/payments/status?correlationId={correlationId}", response);
+            return SharedPaymentResult.Success(HttpStatusCode.Accepted, null, correlationId, request.Reference, SharedPaymentStatus.Initiated);
         }
         catch (DomainException ex)
         {
             logger.LogExceptionWithContext(ex, context, "Domain validation error during payment saga initiation");
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             activity?.SetTag("error.type", "DomainValidation");
-            return Results.BadRequest(ex.Message);
+            return ModuleResult.Failure<SharedPaymentResult>(HttpStatusCode.BadRequest, ex.Message);
         }
         catch (Exception ex)
         {
             logger.LogExceptionWithContext(ex, context, "Unexpected error during payment saga initiation");
             activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
             activity?.SetTag("error.type", ex.GetType().Name);
-            return Results.Problem("An error occurred while initiating the payment process");
-        }
-    }
-    
-    private static async Task ValidateCommandAsync(InitiatePaymentCommand command, IValidator<InitiatePaymentCommand> validator)
-    {
-        var validationResult = await validator.ValidateAsync(command);
-        if (!validationResult.IsValid)
-        {
-            var errors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
-            throw new ValidationException($"Payment initiation validation failed: {errors}");
+            return ModuleResult.Failure<SharedPaymentResult>(HttpStatusCode.InternalServerError,"An error occurred while initiating the payment process");
         }
     }
 }

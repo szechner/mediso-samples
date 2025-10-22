@@ -1,3 +1,6 @@
+using System.Net;
+using Microsoft.AspNetCore.Mvc;
+
 namespace Mediso.PaymentSample.SharedKernel.Modules;
 
 /// <summary>
@@ -17,9 +20,19 @@ public abstract record ModuleResult
     public bool IsSuccess { get; init; }
     public string[]? Errors { get; init; }
     public DateTimeOffset CompletedAt { get; init; } = DateTimeOffset.UtcNow;
-
-    public static T Success<T>() where T : ModuleResult, new() => new() { IsSuccess = true };
+    public HttpStatusCode? HttpStatusCode { get; init; }
     public static T Failure<T>(params string[] errors) where T : ModuleResult, new() => new() { IsSuccess = false, Errors = errors };
+    public static T Failure<T>(HttpStatusCode httpCode, params string[] errors) where T : ModuleResult, new() => new() { IsSuccess = false, Errors = errors, HttpStatusCode = httpCode };
+    public static ProblemDetails ToProblemDetails(ModuleResult result)
+    {
+        return new ProblemDetails
+        {
+            Status = result.HttpStatusCode.HasValue ? (int?)result.HttpStatusCode.Value : null,
+            Title = result.IsSuccess ? "Success" : "Failure",
+            Detail = result.Errors != null ? string.Join("; ", result.Errors) : null,
+            Type = result.GetType().DeclaringType?.Name,
+        };
+    }
 }
 
 // ============ PAYMENTS MODULE CONTRACTS ============
@@ -61,8 +74,12 @@ public sealed record SharedPaymentResult : ModuleResult
 {
     public Guid? PaymentId { get; init; }
     public string? PaymentReference { get; init; }
+    public string? CorrelationId { get; init; }
     public SharedPaymentStatus Status { get; init; }
     public string? ReasonCode { get; init; }
+
+    public static SharedPaymentResult Success(Guid? paymentId, string correlationId, string? paymentReference, SharedPaymentStatus status) => new() { IsSuccess = true, PaymentId = paymentId, CorrelationId = correlationId, PaymentReference = paymentReference, Status = status };
+    public static SharedPaymentResult Success(HttpStatusCode httpCode, Guid? paymentId, string correlationId, string? paymentReference, SharedPaymentStatus status) => new() { IsSuccess = true, HttpStatusCode = httpCode, PaymentId = paymentId, CorrelationId = correlationId, PaymentReference = paymentReference, Status = status };
 }
 
 // ============ ACCOUNT MODULE CONTRACTS ============
@@ -232,12 +249,12 @@ public abstract record SharedIntegrationEvent(
     /// Version of the event schema for backward compatibility
     /// </summary>
     public int Version { get; init; } = 1;
-    
+
     /// <summary>
     /// Correlation identifier for tracking related events
     /// </summary>
     public new string CorrelationId { get; init; } = Guid.NewGuid().ToString();
-    
+
     /// <summary>
     /// Additional event data as key-value pairs
     /// </summary>
@@ -253,9 +270,9 @@ public sealed record SharedPaymentStateChanged(
     SharedPaymentStatus NewStatus,
     string? Reason = null
 ) : SharedIntegrationEvent(
-    Guid.NewGuid(), 
-    DateTimeOffset.UtcNow, 
-    nameof(SharedPaymentStateChanged), 
+    Guid.NewGuid(),
+    DateTimeOffset.UtcNow,
+    nameof(SharedPaymentStateChanged),
     "Payments");
 
 /// <summary>
@@ -268,9 +285,9 @@ public sealed record SharedBalanceChanged(
     decimal TransactionAmount,
     string TransactionType
 ) : SharedIntegrationEvent(
-    Guid.NewGuid(), 
-    DateTimeOffset.UtcNow, 
-    nameof(SharedBalanceChanged), 
+    Guid.NewGuid(),
+    DateTimeOffset.UtcNow,
+    nameof(SharedBalanceChanged),
     "Accounts");
 
 /// <summary>
@@ -283,7 +300,7 @@ public sealed record SharedHighRiskActivityDetected(
     string Description,
     Dictionary<string, string>? RiskFactors = null
 ) : SharedIntegrationEvent(
-    Guid.NewGuid(), 
-    DateTimeOffset.UtcNow, 
-    nameof(SharedHighRiskActivityDetected), 
+    Guid.NewGuid(),
+    DateTimeOffset.UtcNow,
+    nameof(SharedHighRiskActivityDetected),
     "Compliance");

@@ -1,6 +1,5 @@
 ﻿using Mediso.PaymentSample.SharedKernel.Tracing;
 using Microsoft.Extensions.DependencyInjection;
-using Npgsql;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using OpenTelemetry.Metrics;

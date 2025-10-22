@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using Marten;
-using Mediso.PaymentSample.Application.Modules.Payments.Ports.Secondary;
+using Mediso.PaymentSample.Application.Modules.Payments.Ports;
 using Mediso.PaymentSample.Domain.Common;
 using Mediso.PaymentSample.Domain.Payments;
 using Mediso.PaymentSample.SharedKernel.Tracing;

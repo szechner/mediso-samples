@@ -1,5 +1,6 @@
 using Mediso.PaymentSample.Application.Modules.Payments;
 using Mediso.PaymentSample.SharedKernel.Modules;
+using Mediso.PaymentSample.SharedKernel.Modules.ModuleFacades.Ports;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -30,7 +31,7 @@ public sealed class PaymentsModuleRegistration : IModuleRegistration
     public void Configure(IServiceProvider serviceProvider)
     {
         // Initialize payment module background services if needed
-        var logger = serviceProvider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<PaymentsModuleRegistration>>();
+        var logger = serviceProvider.GetRequiredService<ILogger<PaymentsModuleRegistration>>();
         logger.LogInformation("Payments module configured successfully");
         
         // TODO: Initialize payment event subscriptions when implemented

@@ -1,4 +1,5 @@
 using Mediso.PaymentSample.SharedKernel.Modules;
+using Mediso.PaymentSample.SharedKernel.Modules.ModuleFacades.Ports;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -34,7 +35,7 @@ public sealed class AccountsModuleRegistration : IModuleRegistration
     public void Configure(IServiceProvider serviceProvider)
     {
         // Initialize account module background services if needed
-        var logger = serviceProvider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<AccountsModuleRegistration>>();
+        var logger = serviceProvider.GetRequiredService<ILogger<AccountsModuleRegistration>>();
         logger.LogInformation("Accounts module configured successfully");
         
         // TODO: Initialize account event subscriptions when implemented

@@ -1,32 +1,27 @@
 using Microsoft.AspNetCore.Mvc;
 using Wolverine;
-using Mediso.PaymentSample.Domain.Common;
-using Mediso.PaymentSample.Domain.Payments;
 using Mediso.PaymentSample.Application.Modules.Payments.Contracts;
-using Mediso.PaymentSample.Application.Modules.Payments.Ports.Primary;
-using Mediso.PaymentSample.SharedKernel.Abstractions;
-using Mediso.PaymentSample.SharedKernel.Domain;
-using Mediso.PaymentSample.SharedKernel.Logging;
-using Mediso.PaymentSample.SharedKernel.Tracing;
-using System.Diagnostics;
-using Marten;
-using Mediso.PaymentSample.Application.Modules.Payments.Sagas;
+using System.Net;
+using Mediso.PaymentSample.Application.Modules.Payments;
 using Mediso.PaymentSample.SharedKernel.Modules;
+using Mediso.PaymentSample.SharedKernel.Modules.ModuleFacades.Contracts;
+using Mediso.PaymentSample.SharedKernel.Modules.ModuleFacades.Ports;
 using Microsoft.Net.Http.Headers;
-using Wolverine.Http;
-using Wolverine.Marten;
 
 namespace Mediso.PaymentSample.Api.Endpoints;
 
 public static class PaymentEndpoints
 {
-    private readonly static string ModuleName = "Payments";
+    private const string PaymentsApiUri = "/api/payments";
+    private const string PaymentsApiRootUri = "/";
+    private const string PaymentsApiGetPaymentUri = "/{id}";
+    private const string PaymentStatusApiUri = "/status";
 
     public static void MapPaymentEndpoints(this WebApplication app)
     {
-        var payments = app.MapGroup("/api/payments").WithTags("Payments");
+        var payments = app.MapGroup(PaymentsApiUri).WithTags("Payments");
 
-        payments.MapPost("/", CreatePayment)
+        payments.MapPost(PaymentsApiRootUri, CreatePayment)
             .WithName("CreatePayment")
             .WithSummary("Create a new payment")
             .WithOpenApi()
@@ -34,114 +29,91 @@ public static class PaymentEndpoints
             .Produces<PaymentResponse>(StatusCodes.Status202Accepted)
             .Produces(StatusCodes.Status400BadRequest);
 
-        payments.MapGet("/{id}", GetPayment)
+        payments.MapGet(PaymentsApiGetPaymentUri, GetPayment)
             .WithName("GetPayment")
             .WithSummary("Get payment by ID")
             .WithOpenApi()
-            .Accepts<string>(MediaTypeHeaderValue.Parse("text/plain").ToString())
             .Produces<PaymentResponse>(StatusCodes.Status200OK);
 
-        payments.MapPost("/{id}/aml-check", MarkAMLPassed)
-            .WithName("MarkAMLPassed")
-            .WithSummary("Mark payment as AML passed")
-            .WithOpenApi();
-
-        payments.MapGet("/status", GetPaymentStatus)
+        payments.MapGet(PaymentStatusApiUri, GetPaymentStatus)
             .WithName("GetPaymentStatus")
             .WithSummary("Get payment status by correlation ID")
             .WithOpenApi()
-            .Accepts<string>(MediaTypeHeaderValue.Parse("text/plain").ToString())
             .Produces<PaymentSagaStatusResponse>(StatusCodes.Status202Accepted)
             .Produces<PaymentCompletedStatusResponse>(StatusCodes.Status200OK);
     }
 
-    private static Task<IResult> CreatePayment(
+    private static async Task<IResult> CreatePayment(
         [FromBody] CreatePaymentRequest request,
         [FromServices]
         IPaymentModule paymentModule
     )
     {
-        return paymentModule.CreatePaymentAsync(request, ModuleName);
+        var paymentResult = await paymentModule.CreatePaymentAsync(request, PaymentsModule.Name);
+
+        if (!paymentResult.IsSuccess) return Results.Problem(ModuleResult.ToProblemDetails(paymentResult));
+        
+        var response = new PaymentResponse
+        {
+            Id = "pending",
+            Amount = request.Amount,
+            Currency = request.Currency,
+            PayerAccountId = request.PayerAccountId,
+            PayeeAccountId = request.PayeeAccountId,
+            Reference = request.Reference ?? string.Empty,
+            State = "Initiating"
+        };
+        return paymentResult.HttpStatusCode is HttpStatusCode.Accepted ? Results.Accepted($"{PaymentsApiUri}{PaymentStatusApiUri}?correlationId={paymentResult.CorrelationId}", paymentResult) : Results.Ok(response);
+
     }
 
-    private static Task<IResult> GetPayment(
-        string id,
+    private static async Task<IResult> GetPayment(
+        Guid id,
         [FromServices]
-        IMessageBus bus
+        IPaymentModule paymentModule
     )
     {
-        var query = new GetPaymentQuery()
+        try
         {
-            PaymentId = PaymentId.Parse(id)
-        };
-        return bus.InvokeAsync<IResult>(query);
+            var paymentResult = await paymentModule.GetPaymentAsync(id, PaymentsModule.Name);
+
+            if (paymentResult != null)
+            {
+                return Results.Ok(paymentResult);
+            }
+            return Results.NotFound($"Payment {id:D} not found");
+        }
+        catch
+        {
+            return Results.Problem("An error occurred while retrieving the payment");
+        }
     }
 
-    private static Task<IResult> GetPaymentStatus(
+    private static async Task<IResult> GetPaymentStatus(
         [FromQuery]
         string? correlationId,
         [FromServices]
-        IMessageBus bus
+        IPaymentModule paymentModule
     )
     {
-        var query = new GetPaymentStatusQuery()
+        if (string.IsNullOrWhiteSpace(correlationId))
         {
-            CorrelationId = correlationId
-        };
-        return bus.InvokeAsync<IResult>(query);
-    }
-
-
-    private static async Task<IResult> MarkAMLPassed(
-        string id,
-        [FromBody] AMLCheckRequest request,
-        [FromServices]
-        ILogger<Program> logger
-    )
-    {
-        using var activity = TracingConstants.ApiActivitySource.StartActivity("aml-check-payment");
-        using var timing = logger.LogTiming("MarkAMLPassed", id);
-
-        var correlationId = Activity.Current?.GetBaggageItem("CorrelationId") ?? Guid.NewGuid().ToString();
-        var context = new LoggingContext(correlationId)
-            .WithProperty("PaymentId", id)
-            .WithProperty("RuleSetVersion", request.RuleSetVersion);
-
+            return Results.Problem("CorrelationId is required");
+        }
+        
         try
         {
-            logger.LogWithContext(LogLevel.Information,
-                "Marking payment {PaymentId} as AML passed with ruleset {RuleSetVersion}",
-                context, id, request.RuleSetVersion);
+            var paymentStatusResult = await paymentModule.GetPaymentStatusAsync(correlationId, PaymentsModule.Name);
 
-            if (!Guid.TryParse(id, out _))
+            if (paymentStatusResult != null)
             {
-                logger.LogWithContext(LogLevel.Warning, "Invalid payment ID format: {PaymentId}", context, id);
-                return Results.BadRequest("Invalid payment ID format");
+                return Results.Ok(paymentStatusResult);
             }
-
-            activity?.SetTag(TracingConstants.Tags.PaymentId, id);
-            activity?.SetTag("aml.ruleset_version", request.RuleSetVersion);
-
-            // For demo purposes, simulate AML check
-            await Task.Delay(100); // Simulate processing time
-
-            logger.LogWithContext(LogLevel.Information,
-                "Payment {PaymentId} AML check completed successfully", context, id);
-
-            return Results.Ok(new { message = "Payment marked as AML passed", paymentId = id });
+            return Results.NotFound($"Payment with CorrelationId {correlationId:D} not found");
         }
-        catch (Exception ex)
+        catch
         {
-            logger.LogExceptionWithContext(ex, context, "Error during AML check for payment {PaymentId}", id);
-            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
-            return Results.Problem("An error occurred during AML check");
+            return Results.Problem("An error occurred while retrieving the payment");
         }
     }
-}
-
-// Request/Response DTOs
-
-public record AMLCheckRequest
-{
-    public string RuleSetVersion { get; init; } = string.Empty;
 }

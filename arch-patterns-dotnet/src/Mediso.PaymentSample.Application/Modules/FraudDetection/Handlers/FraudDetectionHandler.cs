@@ -335,8 +335,7 @@ public class MockFraudDetectionService : IFraudDetectionService
         
         // Simulate processing time
         await Task.Delay(_random.Next(100, 500), cancellationToken);
-
-        // Mock analysis based on payment characteristics
+        
         var (riskLevel, riskScore, riskFactors, recommendations) = AnalyzePaymentCharacteristics(command);
 
         _logger.LogDebug(
@@ -362,16 +361,11 @@ public class MockFraudDetectionService : IFraudDetectionService
         decimal riskScore = 0.1m; // Base low risk
 
         // Amount-based risk assessment
-        if (command.Amount > 10000m)
+        if (command.Amount > 300_000)
         {
-            riskScore += 0.4m;
+            riskScore += command.Amount / 1_000_000;
             riskFactors.Add("High transaction amount");
             recommendations.Add("Consider additional verification for high-value transactions");
-        }
-        else if (command.Amount > 1000m)
-        {
-            riskScore += 0.2m;
-            riskFactors.Add("Medium transaction amount");
         }
 
         // Currency-based risk (mock rules)
@@ -393,12 +387,12 @@ public class MockFraudDetectionService : IFraudDetectionService
         // In a real implementation, these would be added to the command contract
 
         // Ensure score doesn't exceed 1.0
-        riskScore = Math.Min(riskScore, 1.0m);
+        riskScore = Math.Min(riskScore, 5.0m);
 
         // Determine risk level
         var riskLevel = riskScore switch
         {
-            >= 0.8m => RiskLevel.Blocked,
+            >= 5m => RiskLevel.Blocked,
             >= 0.6m => RiskLevel.High,
             >= 0.3m => RiskLevel.Medium,
             _ => RiskLevel.Low
