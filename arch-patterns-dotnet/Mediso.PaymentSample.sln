@@ -21,9 +21,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.UnitTe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.IntegrationTests", "tests\Mediso.PaymentSample.IntegrationTests\Mediso.PaymentSample.IntegrationTests.csproj", "{FFC51CC5-8AC4-4CC8-8B34-3858EE93C508}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{F8F96EA7-CEC0-46C3-8596-2FE5C8372071}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.DataSeeder", "tools\Mediso.PaymentSample.DataSeeder\Mediso.PaymentSample.DataSeeder.csproj", "{5CA5D1CF-FD42-4407-94DE-F270C88A192B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.Infrastructure.Tests", "tests\Mediso.PaymentSample.Infrastructure.Tests\Mediso.PaymentSample.Infrastructure.Tests.csproj", "{A8B95E28-FEF5-4D07-B89E-D19CA889FEA5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -62,10 +60,10 @@ Global
 		{FFC51CC5-8AC4-4CC8-8B34-3858EE93C508}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FFC51CC5-8AC4-4CC8-8B34-3858EE93C508}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FFC51CC5-8AC4-4CC8-8B34-3858EE93C508}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5CA5D1CF-FD42-4407-94DE-F270C88A192B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5CA5D1CF-FD42-4407-94DE-F270C88A192B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5CA5D1CF-FD42-4407-94DE-F270C88A192B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5CA5D1CF-FD42-4407-94DE-F270C88A192B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A8B95E28-FEF5-4D07-B89E-D19CA889FEA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8B95E28-FEF5-4D07-B89E-D19CA889FEA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8B95E28-FEF5-4D07-B89E-D19CA889FEA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8B95E28-FEF5-4D07-B89E-D19CA889FEA5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{7A1C0DBF-B09A-43BC-9764-3AC7A086AA66} = {DB56A39D-B0DC-4B4D-8FD8-BF679F47157F}
@@ -75,6 +73,6 @@ Global
 		{9522FF32-73AE-4B3B-99A0-2D3E171E0F6B} = {DB56A39D-B0DC-4B4D-8FD8-BF679F47157F}
 		{B33B5DA8-5334-448B-A5D5-A67B840ECCE6} = {3C0E8E8D-E1FD-44B4-9E4D-9BD3BD166B3D}
 		{FFC51CC5-8AC4-4CC8-8B34-3858EE93C508} = {3C0E8E8D-E1FD-44B4-9E4D-9BD3BD166B3D}
-		{5CA5D1CF-FD42-4407-94DE-F270C88A192B} = {F8F96EA7-CEC0-46C3-8596-2FE5C8372071}
+		{A8B95E28-FEF5-4D07-B89E-D19CA889FEA5} = {3C0E8E8D-E1FD-44B4-9E4D-9BD3BD166B3D}
 	EndGlobalSection
 EndGlobal

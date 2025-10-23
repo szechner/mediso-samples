@@ -19,7 +19,7 @@ Clean/Hexagonal architekturu, CQRS, Event Sourcing, resilience a
 observability.
 
 **Technologický rámec:** .NET 8, PostgreSQL + Marten, Wolverine
-(SAGA/orchestrace), MessagePipe (CQRS), OpenTelemetry, Serilog, Polly.
+(SAGA/orchestrace), WolverineFx (CQRS), OpenTelemetry, Serilog, Polly.
 
 **Hlavní cíle:** 
 1. Ukázat dobře strukturovanou doménu plateb a souvisejících modulů

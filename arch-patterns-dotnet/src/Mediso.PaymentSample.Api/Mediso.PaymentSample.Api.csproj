@@ -7,8 +7,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.6" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.*" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.4" />
+    
+    <!-- Logging -->
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+    <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
+    <PackageReference Include="Serilog.Enrichers.CorrelationId" Version="3.0.1" />
+    <PackageReference Include="Serilog.Enrichers.Span" Version="3.1.0" />
+    
+    <!-- OpenTelemetry -->
+    <PackageReference Include="Npgsql.OpenTelemetry" Version="9.0.2" />
+    <PackageReference Include="WolverineFx.Http" Version="4.12.2" />
   </ItemGroup>
 
   <ItemGroup>

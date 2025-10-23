@@ -1,0 +1,102 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: postgres18-payment-sample
+    environment:
+      POSTGRES_DB: payment_sample
+      POSTGRES_USER: payment_user
+      POSTGRES_PASSWORD: payment_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+      POSTGRES_HOST_AUTH_METHOD: trust
+      PGUSER: payment_user
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./scripts/postgresql.conf:/etc/postgresql/postgresql.conf
+      - ./scripts/pg18-init.sql:/docker-entrypoint-initdb.d/pg18-init.sql
+    command: |
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+      -c pg_stat_statements.max=10000
+      -c log_statement=all
+      -c log_duration=on
+      -c log_min_duration_statement=100
+      -c log_checkpoints=on
+      -c log_connections=on
+      -c log_disconnections=on
+      -c log_lock_waits=on
+      -c deadlock_timeout=1s
+      -c max_connections=200
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment_user -d payment_sample"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "com.mediso.service=postgresql18"
+      - "com.mediso.version=18"
+      - "com.mediso.monitoring=enabled"
+
+  pgadmin:
+    image: dpage/pgadmin4:9.8
+    container_name: pgadmin-payment-sample
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@mediso.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: 'True'
+      PGADMIN_CONFIG_LOGIN_BANNER: '"PostgreSQL 18 - Payment Sample"'
+    ports:
+      - "8080:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./scripts/pgadmin-servers.json:/pgadmin4/servers.json
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    labels:
+      - "com.mediso.service=pgadmin"
+      - "com.mediso.monitoring=enabled"
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.51
+    container_name: jaeger-payment-sample
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - COLLECTOR_ZIPKIN_HOST_PORT=:9411
+      - JAEGER_DISABLED=false
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+      - "16686:16686"  # Jaeger UI
+      - "14250:14250"  # gRPC
+      - "14268:14268"  # HTTP
+      - "9411:9411"    # Zipkin
+      - "6831:6831/udp" # Agent UDP
+      - "6832:6832/udp" # Agent UDP
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=false"
+
+volumes:
+  postgres_data:
+    driver: local
+    labels:
+      - "com.mediso.description=PostgreSQL 18 data volume for payment sample"
+  pgadmin_data:
+    driver: local
+    labels:
+      - "com.mediso.description=pgAdmin data volume for PostgreSQL monitoring"

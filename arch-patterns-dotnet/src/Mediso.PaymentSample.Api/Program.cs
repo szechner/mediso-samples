@@ -1,11 +1,77 @@
+using Serilog;
+using Serilog.Enrichers.Span;
+
+using Mediso.PaymentSample.SharedKernel.Tracing;
+using Mediso.PaymentSample.SharedKernel.Logging;
+using Mediso.PaymentSample.Api.Endpoints;
+using Mediso.PaymentSample.Infrastructure.Configuration;
+using Mediso.PaymentSample.Application.Configuration;
+using Mediso.PaymentSample.Infrastructure.DIExtensions;
+using Mediso.PaymentSample.Infrastructure.Modules;
+using Mediso.PaymentSample.SharedKernel.Modules;
+
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Wolverine with Marten integration
+builder.Host.UseWolverineWithMarten();
+
+// Configure Serilog for structured logging
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .Enrich.WithEnvironmentName()
+    .Enrich.WithMachineName()
+    .Enrich.WithThreadId()
+    .Enrich.WithSpan()
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
+var connectionString = builder.Configuration.GetConnectionString("Default");
+if (!string.IsNullOrEmpty(connectionString))
+{
+    builder.Services.AddMartenEventStore(connectionString);
+}
+
+var environmentName = builder.Environment.EnvironmentName;
+var jaegerEndpoint = builder.Configuration["Jaeger:Endpoint"];
+
+// Configure OpenTelemetry with comprehensive instrumentation
+builder.Services.ConfigureOpenTelemetry(environmentName, jaegerEndpoint);
+
+builder.Services.AddModularArchitecture(builder.Configuration, bootstrapper =>
+{
+    bootstrapper.RegisterModule<AccountsModuleRegistration>();
+    bootstrapper.RegisterModule<ComplianceModuleRegistration>();
+    bootstrapper.RegisterModule<LedgerModuleRegistration>();
+    bootstrapper.RegisterModule<PaymentsModuleRegistration>();
+});
+
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddApplicationServices();
+builder.Services.AddSingleton<ILoggingContext, LoggingContext>();
+builder.Services.AddMemoryCache(); // Required by PaymentQueryHandlers
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+// Add request correlation ID middleware
+app.Use(async (context, next) =>
+{
+    var correlationId = context.Request.Headers["X-Correlation-ID"].FirstOrDefault() ?? Guid.NewGuid().ToString();
+    context.Response.Headers["X-Correlation-ID"] = correlationId;
+    
+    using var activity = TracingConstants.ApiActivitySource.StartActivity(TracingConstants.Activities.HttpRequest);
+    activity?.SetTag(TracingConstants.Tags.CorrelationId, correlationId);
+    activity?.SetTag("http.method", context.Request.Method);
+    activity?.SetTag("http.path", context.Request.Path);
+    
+    using (Serilog.Context.LogContext.PushProperty("CorrelationId", correlationId))
+    {
+        await next(context);
+    }
+});
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -14,31 +80,45 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
-var summaries = new[]
+// Global exception handler
+app.UseExceptionHandler(errorApp =>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+    errorApp.Run(async context =>
+    {
+        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+        var exceptionFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        
+        if (exceptionFeature?.Error != null)
+        {
+            using var activity = TracingConstants.ApiActivitySource.StartActivity("error-handling");
+            activity?.SetTag("error.type", exceptionFeature.Error.GetType().Name);
+            activity?.SetTag("error.message", exceptionFeature.Error.Message);
+            
+            logger.LogError(exceptionFeature.Error, "Unhandled exception occurred: {ErrorMessage}", exceptionFeature.Error.Message);
+        }
+        
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsync(
+            System.Text.Json.JsonSerializer.Serialize(new { error = "An internal server error occurred." }));
+    });
+});
 
-app.MapGet("/weatherforecast", () =>
+// Map payment endpoints
+app.MapPaymentEndpoints();
+
+try
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
-
-app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    Log.Information("Starting {ServiceName} v{ServiceVersion}", TracingConstants.ServiceName, TracingConstants.ServiceVersion);
+    app.Run();
 }
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.Information("Shutting down {ServiceName}", TracingConstants.ServiceName);
+    Log.CloseAndFlush();
+}
+
