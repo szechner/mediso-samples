@@ -80,9 +80,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Map payment endpoints
-app.MapPaymentEndpoints();
-
 // Global exception handler
 app.UseExceptionHandler(errorApp =>
 {
@@ -106,6 +103,9 @@ app.UseExceptionHandler(errorApp =>
             System.Text.Json.JsonSerializer.Serialize(new { error = "An internal server error occurred." }));
     });
 });
+
+// Map payment endpoints
+app.MapPaymentEndpoints();
 
 try
 {
