@@ -1,0 +1,48 @@
+﻿kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: mediso-payment-sample-api
+  namespace: default
+  labels:
+    k8s-app: mediso-payment-sample-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: mediso-payment-sample-api
+  template:
+    metadata:
+      name: mediso-payment-sample-api
+      labels:
+        k8s-app: mediso-payment-sample-api
+    spec:
+      containers:
+        - name: mediso-payment-sample-api
+          image: zechner/mediso-sample-payment:0.0.2
+          ports:
+            - name: tcp-8080
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: ConnectionStrings__Default
+              valueFrom:
+                secretKeyRef:
+                  name: pg-payment-sample-app
+                  key: connectionstring
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Production
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: tcp-8080
+            initialDelaySeconds: 5
+            periodSeconds: 15
+            failureThreshold: 3
+      restartPolicy: Always
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+

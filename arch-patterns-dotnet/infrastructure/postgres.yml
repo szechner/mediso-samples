@@ -1,0 +1,15 @@
+﻿apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: pg-payment-sample
+spec:
+  instances: 1
+  imageName: ghcr.io/cloudnative-pg/postgresql:18
+  bootstrap:
+    initdb:
+      database: payment_sample
+      owner: payment_user
+  storage:
+    size: 5Gi
+  walStorage:
+    size: 1Gi

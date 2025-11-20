@@ -1,5 +1,6 @@
 ﻿using Mediso.PaymentSample.SharedKernel.Tracing;
 using Microsoft.Extensions.DependencyInjection;
+using OpenTelemetry.Exporter;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using OpenTelemetry.Metrics;
@@ -46,7 +47,16 @@ public static class OpenTelemetryExtensions
                 .AddHttpClientInstrumentation()
                 .AddSqlClientInstrumentation()
                 // .AddNpgsql() // This will instrument Npgsql connections used by Marten
-                .AddJaegerExporter(options => { options.Endpoint = new Uri(jaegerEndpoint ?? "http://localhost:4317"); }))
+                .AddOtlpExporter(options =>
+                {
+                    options.Endpoint = new Uri(jaegerEndpoint ?? "http://localhost:4318/v1/traces");
+                    options.Protocol = OtlpExportProtocol.HttpProtobuf;
+                })
+                .AddConsoleExporter(options =>
+                {
+                    options.Targets = ConsoleExporterOutputTargets.Debug;
+                })
+            )
             .WithMetrics(metrics => metrics
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()

@@ -1,0 +1,16 @@
+apiVersion: jaegertracing.io/v1
+kind: Jaeger
+metadata:
+  name: jaeger-ingress
+spec:
+  strategy: allInOne
+  ingress:
+    hosts:
+      - jaeger.medisample.online
+    tls:
+      - hosts:
+          - jaeger.medisample.online
+        secretName: microbot-ingress-jaeger-tls
+    annotations:
+      cert-manager.io/cluster-issuer: lets-encrypt
+      kubernetes.io/ingress.class: public

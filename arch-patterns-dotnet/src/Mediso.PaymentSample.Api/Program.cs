@@ -1,6 +1,5 @@
 using Serilog;
 using Serilog.Enrichers.Span;
-
 using Mediso.PaymentSample.SharedKernel.Tracing;
 using Mediso.PaymentSample.SharedKernel.Logging;
 using Mediso.PaymentSample.Api.Endpoints;
@@ -31,6 +30,7 @@ var connectionString = builder.Configuration.GetConnectionString("Default");
 if (!string.IsNullOrEmpty(connectionString))
 {
     builder.Services.AddMartenEventStore(connectionString);
+    builder.Services.AddHealthChecks().AddNpgSql(connectionString);
 }
 
 var environmentName = builder.Environment.EnvironmentName;
@@ -61,12 +61,12 @@ app.Use(async (context, next) =>
 {
     var correlationId = context.Request.Headers["X-Correlation-ID"].FirstOrDefault() ?? Guid.NewGuid().ToString();
     context.Response.Headers["X-Correlation-ID"] = correlationId;
-    
+
     using var activity = TracingConstants.ApiActivitySource.StartActivity(TracingConstants.Activities.HttpRequest);
     activity?.SetTag(TracingConstants.Tags.CorrelationId, correlationId);
     activity?.SetTag("http.method", context.Request.Method);
     activity?.SetTag("http.path", context.Request.Path);
-    
+
     using (Serilog.Context.LogContext.PushProperty("CorrelationId", correlationId))
     {
         await next(context);
@@ -74,11 +74,10 @@ app.Use(async (context, next) =>
 });
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
+
+app.MapHealthChecks("/health");
 
 // Global exception handler
 app.UseExceptionHandler(errorApp =>
@@ -87,20 +86,23 @@ app.UseExceptionHandler(errorApp =>
     {
         var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
         var exceptionFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
-        
+
         if (exceptionFeature?.Error != null)
         {
             using var activity = TracingConstants.ApiActivitySource.StartActivity("error-handling");
             activity?.SetTag("error.type", exceptionFeature.Error.GetType().Name);
             activity?.SetTag("error.message", exceptionFeature.Error.Message);
-            
+
             logger.LogError(exceptionFeature.Error, "Unhandled exception occurred: {ErrorMessage}", exceptionFeature.Error.Message);
         }
-        
+
         context.Response.StatusCode = 500;
         context.Response.ContentType = "application/json";
         await context.Response.WriteAsync(
-            System.Text.Json.JsonSerializer.Serialize(new { error = "An internal server error occurred." }));
+            System.Text.Json.JsonSerializer.Serialize(new
+            {
+                error = "An internal server error occurred."
+            }));
     });
 });
 
@@ -121,4 +123,3 @@ finally
     Log.Information("Shutting down {ServiceName}", TracingConstants.ServiceName);
     Log.CloseAndFlush();
 }
-
