@@ -31,6 +31,8 @@ spec:
                   key: connectionstring
             - name: ASPNETCORE_ENVIRONMENT
               value: Production
+            - name: Jaeger__Endpoint
+              value: http://jaeger-ingress-collector:4318/v1/traces
           imagePullPolicy: IfNotPresent
           livenessProbe:
             httpGet:
