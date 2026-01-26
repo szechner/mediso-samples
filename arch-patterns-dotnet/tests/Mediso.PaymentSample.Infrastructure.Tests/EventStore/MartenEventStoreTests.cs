@@ -28,7 +28,8 @@ public class MartenEventStoreTests
 
         // Add logging
         services.AddLogging(builder => builder.AddConsole());
-
+        services.AddScoped<IAuditPublisher>(_ => A.Fake<IAuditPublisher>());
+        
         // Use in-memory connection string for testing
         var connectionString = "Host=localhost;Database=marten_test;Username=postgres;Password=password";
 
