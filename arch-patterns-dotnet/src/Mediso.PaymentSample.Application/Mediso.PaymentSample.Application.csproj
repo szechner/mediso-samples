@@ -42,10 +42,13 @@
         <PackageReference Include="System.Text.Json" Version="9.0.0"/>
         <PackageReference Include="WolverineFx" Version="4.12.2"/>
         <PackageReference Include="WolverineFx.Marten" Version="4.12.2"/>
+
+        <!-- Kafka Integration-->
+        <PackageReference Include="WolverineFx.Kafka" Version="4.12.2" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Modules\FraudDetection\UseCases\" />
+        <Folder Include="Modules\FraudDetection\UseCases\"/>
     </ItemGroup>
 
 </Project>

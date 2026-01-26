@@ -8,8 +8,10 @@ using Mediso.PaymentSample.Application.Common;
 using Mediso.PaymentSample.Application.Modules.FraudDetection.Handlers;
 using Mediso.PaymentSample.Application.Modules.Payments.Handlers;
 using Mediso.PaymentSample.Application.Modules.Payments.Ports;
+using Mediso.PaymentSample.SharedKernel.Audit;
 using Mediso.PaymentSample.SharedKernel.Modules;
 using Wolverine.ErrorHandling;
+using Wolverine.Kafka;
 
 namespace Mediso.PaymentSample.Application.Configuration;
 
@@ -33,8 +35,9 @@ public static class ApplicationConfiguration
         services.AddScoped<IReservePaymentHandler, ReservePaymentCommandHandler>();
         services.AddScoped<ISettlePaymentHandler, SettlePaymentCommandHandler>();
         services.AddScoped<ICancelPaymentHandler, CancelPaymentCommandHandler>();
-
         services.AddHttpContextAccessor();
+        
+        
         return services;
     }
 
@@ -94,6 +97,11 @@ public static class ApplicationConfiguration
             
             opts.Services.AddResourceSetupOnStartup();
             opts.Services.AddSingleton<IModuleAccessPolicy, ModuleAccessPolicy>();
+
+            opts.UseKafka("localhost:9092");
+            
+            opts.PublishMessage<AuditEventV1>()
+                .ToKafkaTopic("payments.audit.v1");
         });
     }
 }

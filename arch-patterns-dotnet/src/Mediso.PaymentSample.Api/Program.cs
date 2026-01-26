@@ -5,6 +5,7 @@ using Mediso.PaymentSample.SharedKernel.Logging;
 using Mediso.PaymentSample.Api.Endpoints;
 using Mediso.PaymentSample.Infrastructure.Configuration;
 using Mediso.PaymentSample.Application.Configuration;
+using Mediso.PaymentSample.Infrastructure.Audit;
 using Mediso.PaymentSample.Infrastructure.DIExtensions;
 using Mediso.PaymentSample.Infrastructure.Modules;
 using Mediso.PaymentSample.SharedKernel.Modules;
@@ -53,6 +54,7 @@ builder.Services.AddSingleton<ILoggingContext, LoggingContext>();
 builder.Services.AddMemoryCache(); // Required by PaymentQueryHandlers
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<IAuditPublisher, AuditPublisher>();
 
 var app = builder.Build();
 
@@ -108,6 +110,9 @@ app.UseExceptionHandler(errorApp =>
 
 // Map payment endpoints
 app.MapPaymentEndpoints();
+
+// Map development endpoints
+app.MapDevEndpoints();
 
 try
 {

@@ -40,7 +40,7 @@ services:
       -c default_statistics_target=100
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U payment_user -d payment_sample"]
+      test: [ "CMD-SHELL", "pg_isready -U payment_user -d payment_sample" ]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -69,6 +69,57 @@ services:
         condition: service_healthy
     labels:
       - "com.mediso.service=pgadmin"
+      - "com.mediso.monitoring=enabled"
+
+  # Apache Kafka (single node, KRaft combined mode) for local development
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka-payment-sample
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_LISTENERS: "PLAINTEXT://:9092,PLAINTEXT_INTERNAL://:29092,CONTROLLER://:9093"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT_INTERNAL"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+      KAFKA_NUM_PARTITIONS: "3"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 25s
+    labels:
+      - "com.mediso.service=kafka"
+      - "com.mediso.monitoring=enabled"
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    container_name: kafka-ui-payment-sample
+    ports:
+      - "8081:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: "local"
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka:29092"
+      DYNAMIC_CONFIG_ENABLED: "false"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+    labels:
+      - "com.mediso.service=kafka-ui"
       - "com.mediso.monitoring=enabled"
 
   jaeger:
@@ -100,3 +151,7 @@ volumes:
     driver: local
     labels:
       - "com.mediso.description=pgAdmin data volume for PostgreSQL monitoring"
+  kafka_data:
+    driver: local
+    labels:
+      - "com.mediso.description=Kafka data volume for payment sample"

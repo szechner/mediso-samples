@@ -3,6 +3,7 @@ using FakeItEasy;
 using Marten;
 using Mediso.PaymentSample.Domain.Common;
 using Mediso.PaymentSample.Domain.Payments;
+using Mediso.PaymentSample.Infrastructure.Audit;
 using Mediso.PaymentSample.Infrastructure.Configuration;
 using Mediso.PaymentSample.Infrastructure.EventStore;
 using Mediso.PaymentSample.SharedKernel.Abstractions;
@@ -19,26 +20,26 @@ public class MartenEventStoreTests
     private ServiceProvider _serviceProvider = null!;
     private IEventStore _eventStore = null!;
     private IDocumentStore _documentStore = null!;
-    
+
     [SetUp]
     public void SetUp()
     {
         var services = new ServiceCollection();
-        
+
         // Add logging
         services.AddLogging(builder => builder.AddConsole());
-        
+
         // Use in-memory connection string for testing
         var connectionString = "Host=localhost;Database=marten_test;Username=postgres;Password=password";
-        
+
         // Add Marten event store with our configuration
         services.AddMartenEventStore(connectionString);
-        
+
         _serviceProvider = services.BuildServiceProvider();
         _eventStore = _serviceProvider.GetRequiredService<IEventStore>();
         _documentStore = _serviceProvider.GetRequiredService<IDocumentStore>();
     }
-    
+
     [TearDown]
     public void TearDown()
     {
@@ -53,9 +54,10 @@ public class MartenEventStoreTests
         // Arrange
         var session = A.Fake<IDocumentSession>();
         var logger = A.Fake<ILogger<MartenEventStore>>();
+        var auditPublisher = A.Fake<IAuditPublisher>();
 
         // Act
-        var eventStore = new MartenEventStore(session, logger);
+        var eventStore = new MartenEventStore(session, logger, auditPublisher);
 
         // Assert
         Assert.That(eventStore, Is.Not.Null);
@@ -66,9 +68,10 @@ public class MartenEventStoreTests
     {
         // Arrange
         var logger = A.Fake<ILogger<MartenEventStore>>();
+        var auditPublisher = A.Fake<IAuditPublisher>();
 
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => new MartenEventStore(null!, logger));
+        Assert.Throws<ArgumentNullException>(() => new MartenEventStore(null!, logger, auditPublisher));
     }
 
     [Test]
@@ -76,9 +79,10 @@ public class MartenEventStoreTests
     {
         // Arrange
         var session = A.Fake<IDocumentSession>();
+        var auditPublisher = A.Fake<IAuditPublisher>();
 
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => new MartenEventStore(session, null!));
+        Assert.Throws<ArgumentNullException>(() => new MartenEventStore(session, null!, auditPublisher));
     }
 
     [Test]
@@ -94,7 +98,8 @@ public class MartenEventStoreTests
 
         var session = A.Fake<IDocumentSession>();
         var logger = A.Fake<ILogger<MartenEventStore>>();
-        var eventStore = new MartenEventStore(session, logger);
+        var auditPublisher = A.Fake<IAuditPublisher>();
+        var eventStore = new MartenEventStore(session, logger, auditPublisher);
 
         var events = new[]
         {
@@ -111,14 +116,14 @@ public class MartenEventStoreTests
         // Test the method doesn't throw with a fake session
         try
         {
-            await eventStore.AppendEventsAsync(Guid.NewGuid(),0, events, Guid.NewGuid().ToString("D"));
+            await eventStore.AppendEventsAsync(Guid.NewGuid(), 0, events, Guid.NewGuid().ToString("D"));
         }
         catch (Exception ex)
         {
             // Expected due to fake session, verify it's a mocking/fake related exception
             Assert.That(ex, Is.Not.Null);
         }
-        
+
         // Verify logging was called - this test actually passes since we can see 
         // the fake logger captured the log calls in the test output
         Assert.Pass("Logging verification successful - see test output for logged calls");
@@ -151,7 +156,8 @@ public class MartenEventStoreTests
         // Arrange
         var session = A.Fake<IDocumentSession>();
         var logger = A.Fake<ILogger<MartenEventStore>>();
-        var eventStore = new MartenEventStore(session, logger);
+        var auditPublisher = A.Fake<IAuditPublisher>();
+        var eventStore = new MartenEventStore(session, logger, auditPublisher);
 
         // Act & Assert
         Assert.DoesNotThrow(() => eventStore.Dispose());

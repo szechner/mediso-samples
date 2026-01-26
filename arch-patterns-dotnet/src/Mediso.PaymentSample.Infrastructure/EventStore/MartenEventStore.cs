@@ -1,7 +1,10 @@
 using System.Diagnostics;
 using Marten;
+using Mediso.PaymentSample.Domain.Payments;
+using Mediso.PaymentSample.Infrastructure.Audit;
 using Microsoft.Extensions.Logging;
 using Mediso.PaymentSample.SharedKernel.Abstractions;
+using Mediso.PaymentSample.SharedKernel.Crypto;
 using Mediso.PaymentSample.SharedKernel.Domain;
 using Mediso.PaymentSample.SharedKernel.Tracing;
 
@@ -12,11 +15,13 @@ public class MartenEventStore : IEventStore, IDisposable
     private readonly IDocumentSession _session;
     private readonly ILogger<MartenEventStore> _logger;
     private static readonly ActivitySource ActivitySource = new(TracingConstants.InfrastructureServiceName);
-
-    public MartenEventStore(IDocumentSession session, ILogger<MartenEventStore> logger)
+    private readonly IAuditPublisher _auditPublisher;
+    
+    public MartenEventStore(IDocumentSession session, ILogger<MartenEventStore> logger, IAuditPublisher auditPublisher)
     {
         _session = session ?? throw new ArgumentNullException(nameof(session));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _auditPublisher = auditPublisher;
     }
 
     /// <summary>
@@ -212,6 +217,19 @@ public class MartenEventStore : IEventStore, IDisposable
 
             await _session.SaveChangesAsync(cancellationToken);
 
+            foreach (var evt in uncommitted)
+            {
+                if (TryMapToAudit(evt, correlationId, out var audit))
+                {
+                    await _auditPublisher.EmitAsync(
+                        audit.EventType,
+                        Guid.Parse(correlationId),
+                        audit.OccurredAtUtc,
+                        audit.Payload,
+                        cancellationToken);
+                }
+            }
+            
             // úspěch → označ eventy jako commitnuté v agregátu
             aggregate.MarkEventsAsCommitted();
 
@@ -224,6 +242,132 @@ public class MartenEventStore : IEventStore, IDisposable
             throw;
         }
     }
+    
+    private static bool TryMapToAudit(
+    IDomainEvent domainEvent,
+    string correlationId,
+    out (string EventType, DateTimeOffset OccurredAtUtc, object Payload) audit)
+{
+    audit = default;
+
+    switch (domainEvent)
+    {
+        case PaymentRequested e:
+            audit = (
+                EventType: "payment_requested",
+                OccurredAtUtc: e.CreatedAt,
+                Payload: new
+                {
+                    paymentId = e.PaymentId.Value,
+                    amount = e.Amount.Amount,
+                    currency = e.Amount.Currency,
+                    payerAccountId = e.PayerAccountId.Value,
+                    payeeAccountId = e.PayeeAccountId.Value,
+                    reference = e.Reference,
+                    correlationId
+                }
+            );
+            return true;
+
+        case FundsReserved e:
+            audit = (
+                "funds_reserved",
+                e.CreatedAt,
+                new
+                {
+                    paymentId = e.PaymentId.Value,
+                    reservationId = e.ReservationId.Value,
+                    amount = e.Amount.Amount,
+                    currency = e.Amount.Currency,
+                    correlationId
+                }
+            );
+            return true;
+
+        case FundsReservationFailed e:
+            audit = (
+                "funds_reservation_failed",
+                e.CreatedAt,
+                new
+                {
+                    paymentId = e.PaymentId.Value,
+                    reason = e.Reason,
+                    correlationId
+                }
+            );
+            return true;
+
+        case PaymentJournaled e:
+            audit = (
+                "payment_journaled",
+                e.CreatedAt,
+                new
+                {
+                    paymentId = e.PaymentId.Value,
+                    entriesCount = e.Entries.Count,
+                    entriesSha256 = HashEntries(e.Entries),
+                    correlationId
+                }
+            );
+            return true;
+
+        case PaymentSettled e:
+            audit = (
+                "payment_settled",
+                e.CreatedAt,
+                new
+                {
+                    paymentId = e.PaymentId.Value,
+                    channel = e.Channel,
+                    externalRef = e.ExternalRef,
+                    correlationId
+                }
+            );
+            return true;
+
+        case PaymentCancelled e:
+            audit = (
+                "payment_cancelled",
+                e.CreatedAt,
+                new { paymentId = e.PaymentId.Value, by = e.By, correlationId }
+            );
+            return true;
+
+        case PaymentDeclined e:
+            audit = (
+                "payment_declined",
+                e.CreatedAt,
+                new { paymentId = e.PaymentId.Value, reason = e.Reason, correlationId }
+            );
+            return true;
+
+        case PaymentFailed e:
+            audit = (
+                "payment_failed",
+                e.CreatedAt,
+                new { paymentId = e.PaymentId.Value, reason = e.Reason, correlationId }
+            );
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+// MVP helper: “stabilní” hash ledgeru bez posílání celé struktury
+private static string HashEntries(IReadOnlyList<LedgerEntry> entries)
+{
+    // deterministický string: seřadit podle EntryId a vypsat klíčové fields
+    var stable = entries
+        .OrderBy(x => x.EntryId.Value)
+        .Select(x => $"{x.EntryId.Value}|{x.DebitAccountId.Value}|{x.CreditAccountId.Value}|{x.Amount.Amount}|{x.Amount.Currency}")
+        .ToArray();
+
+    var joined = string.Join("\n", stable);
+    return Hashing.Sha256Hex(joined);
+}
+
+
 
     public void Dispose() => _session?.Dispose();
 }
