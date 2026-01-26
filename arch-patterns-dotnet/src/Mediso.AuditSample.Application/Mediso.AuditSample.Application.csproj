@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Mediso.AuditSample.Domain\Mediso.AuditSample.Domain.csproj" />
+      <ProjectReference Include="..\Mediso.PaymentSample.SharedKernel\Mediso.PaymentSample.SharedKernel.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="WolverineFx" Version="4.12.2" />
+      <PackageReference Include="WolverineFx.Kafka" Version="4.12.2" />
+    </ItemGroup>
+
+</Project>

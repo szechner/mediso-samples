@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{DB56A39D-B0DC-4B4D-8FD8-BF679F47157F}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "payment-sample-src", "payment-sample-src", "{DB56A39D-B0DC-4B4D-8FD8-BF679F47157F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.SharedKernel", "src\Mediso.PaymentSample.SharedKernel\Mediso.PaymentSample.SharedKernel.csproj", "{7A1C0DBF-B09A-43BC-9764-3AC7A086AA66}"
 EndProject
@@ -22,6 +22,16 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.IntegrationTests", "tests\Mediso.PaymentSample.IntegrationTests\Mediso.PaymentSample.IntegrationTests.csproj", "{FFC51CC5-8AC4-4CC8-8B34-3858EE93C508}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.PaymentSample.Infrastructure.Tests", "tests\Mediso.PaymentSample.Infrastructure.Tests\Mediso.PaymentSample.Infrastructure.Tests.csproj", "{A8B95E28-FEF5-4D07-B89E-D19CA889FEA5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "audit-sample-src", "audit-sample-src", "{0FCB8AF2-FB94-4653-91A5-49F1791C2846}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.AuditSample.Api", "src\Mediso.AuditSample.Api\Mediso.AuditSample.Api.csproj", "{D313861A-7204-46C6-A500-E23DF33D2111}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.AuditSample.Application", "src\Mediso.AuditSample.Application\Mediso.AuditSample.Application.csproj", "{DE04ACD0-2523-465E-91CB-F20C0119C51E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.AuditSample.Domain", "src\Mediso.AuditSample.Domain\Mediso.AuditSample.Domain.csproj", "{4613C8F8-72B8-46C8-9FD6-C2DECF9414B8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediso.AuditSample.Infrastructure", "src\Mediso.AuditSample.Infrastructure\Mediso.AuditSample.Infrastructure.csproj", "{733F37E5-01B2-41BE-BB55-E68E6ED6FDC6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -64,6 +74,22 @@ Global
 		{A8B95E28-FEF5-4D07-B89E-D19CA889FEA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A8B95E28-FEF5-4D07-B89E-D19CA889FEA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A8B95E28-FEF5-4D07-B89E-D19CA889FEA5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D313861A-7204-46C6-A500-E23DF33D2111}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D313861A-7204-46C6-A500-E23DF33D2111}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D313861A-7204-46C6-A500-E23DF33D2111}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D313861A-7204-46C6-A500-E23DF33D2111}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE04ACD0-2523-465E-91CB-F20C0119C51E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE04ACD0-2523-465E-91CB-F20C0119C51E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE04ACD0-2523-465E-91CB-F20C0119C51E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE04ACD0-2523-465E-91CB-F20C0119C51E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4613C8F8-72B8-46C8-9FD6-C2DECF9414B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4613C8F8-72B8-46C8-9FD6-C2DECF9414B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4613C8F8-72B8-46C8-9FD6-C2DECF9414B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4613C8F8-72B8-46C8-9FD6-C2DECF9414B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{733F37E5-01B2-41BE-BB55-E68E6ED6FDC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{733F37E5-01B2-41BE-BB55-E68E6ED6FDC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{733F37E5-01B2-41BE-BB55-E68E6ED6FDC6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{733F37E5-01B2-41BE-BB55-E68E6ED6FDC6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{7A1C0DBF-B09A-43BC-9764-3AC7A086AA66} = {DB56A39D-B0DC-4B4D-8FD8-BF679F47157F}
@@ -74,5 +100,9 @@ Global
 		{B33B5DA8-5334-448B-A5D5-A67B840ECCE6} = {3C0E8E8D-E1FD-44B4-9E4D-9BD3BD166B3D}
 		{FFC51CC5-8AC4-4CC8-8B34-3858EE93C508} = {3C0E8E8D-E1FD-44B4-9E4D-9BD3BD166B3D}
 		{A8B95E28-FEF5-4D07-B89E-D19CA889FEA5} = {3C0E8E8D-E1FD-44B4-9E4D-9BD3BD166B3D}
+		{D313861A-7204-46C6-A500-E23DF33D2111} = {0FCB8AF2-FB94-4653-91A5-49F1791C2846}
+		{DE04ACD0-2523-465E-91CB-F20C0119C51E} = {0FCB8AF2-FB94-4653-91A5-49F1791C2846}
+		{4613C8F8-72B8-46C8-9FD6-C2DECF9414B8} = {0FCB8AF2-FB94-4653-91A5-49F1791C2846}
+		{733F37E5-01B2-41BE-BB55-E68E6ED6FDC6} = {0FCB8AF2-FB94-4653-91A5-49F1791C2846}
 	EndGlobalSection
 EndGlobal

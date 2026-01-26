@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Dapper" Version="2.1.66" />
+      <PackageReference Include="Npgsql" Version="9.0.2" />
+      <PackageReference Include="WolverineFx" Version="4.12.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Mediso.PaymentSample.SharedKernel\Mediso.PaymentSample.SharedKernel.csproj" />
+    </ItemGroup>
+
+</Project>

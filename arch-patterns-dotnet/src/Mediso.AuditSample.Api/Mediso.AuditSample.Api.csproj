@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.23"/>
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
+        <PackageReference Include="WolverineFx" Version="4.12.2" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Mediso.AuditSample.Application\Mediso.AuditSample.Application.csproj" />
+      <ProjectReference Include="..\Mediso.AuditSample.Infrastructure\Mediso.AuditSample.Infrastructure.csproj" />
+      <ProjectReference Include="..\Mediso.PaymentSample.SharedKernel\Mediso.PaymentSample.SharedKernel.csproj" />
+    </ItemGroup>
+
+</Project>
