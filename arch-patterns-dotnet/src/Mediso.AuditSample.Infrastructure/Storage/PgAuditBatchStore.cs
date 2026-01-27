@@ -78,4 +78,50 @@ values (@BatchId, @RecordId, @LeafHex);
             DateTime.SpecifyKind(fromUtc, DateTimeKind.Utc),
             DateTime.SpecifyKind(toUtc, DateTimeKind.Utc));
     }
+    
+    public async Task<PendingBatch?> GetNextPendingAnchorAsync(CancellationToken ct)
+    {
+        await using var conn = await _ds.OpenConnectionAsync(ct);
+
+        const string sql = @"
+select batch_id as BatchId, merkle_root_sha256 as MerkleRootSha256
+from audit_batches
+where status = 'PendingAnchor'
+order by created_at_utc asc
+limit 1;
+";
+        return await conn.QueryFirstOrDefaultAsync<PendingBatch>(new CommandDefinition(sql, cancellationToken: ct));
+    }
+
+    public async Task MarkAnchoredAsync(Guid batchId, string chain, string network, string txSignature, CancellationToken ct)
+    {
+        await using var conn = await _ds.OpenConnectionAsync(ct);
+        await using var tx = await conn.BeginTransactionAsync(ct);
+
+        await conn.ExecuteAsync(new CommandDefinition(@"
+update audit_batches
+set status = 'Anchored'
+where batch_id = @batchId;
+", new { batchId }, tx, cancellationToken: ct));
+
+        await conn.ExecuteAsync(new CommandDefinition(@"
+insert into audit_anchors (batch_id, chain, network, tx_signature)
+values (@batchId, @chain, @network, @txSignature);
+", new { batchId, chain, network, txSignature }, tx, cancellationToken: ct));
+
+        await tx.CommitAsync(ct);
+    }
+
+    public async Task MarkAnchorFailedAsync(Guid batchId, string reason, CancellationToken ct)
+    {
+        await using var conn = await _ds.OpenConnectionAsync(ct);
+        await conn.ExecuteAsync(new CommandDefinition(@"
+update audit_batches
+set status = 'AnchorFailed'
+where batch_id = @batchId;
+", new { batchId }, cancellationToken: ct));
+
+        // reason zatím neukládáme
+    }
+
 }

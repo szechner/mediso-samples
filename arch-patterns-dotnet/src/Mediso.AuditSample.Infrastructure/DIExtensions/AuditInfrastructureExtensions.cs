@@ -1,4 +1,5 @@
-﻿using Mediso.AuditSample.Infrastructure.Storage;
+﻿using Mediso.AuditSample.Infrastructure.Anchoring;
+using Mediso.AuditSample.Infrastructure.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -14,6 +15,8 @@ public static class AuditInfrastructureExtensions
 
         services.AddScoped<IAuditRecordStore, PgAuditRecordStore>();
         services.AddScoped<IAuditBatchStore, PgAuditBatchStore>();
+        services.AddSingleton<IAnchorProvider, SolanaMemoAnchorProvider>();
+        
         return services;
     }
 }

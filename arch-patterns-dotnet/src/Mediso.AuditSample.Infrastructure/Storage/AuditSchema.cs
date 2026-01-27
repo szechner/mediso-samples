@@ -48,6 +48,15 @@ create index if not exists ix_audit_batch_items_record on audit_batch_items(audi
 
 create index if not exists ix_audit_records_id on audit_records(id);
 
+create table if not exists audit_anchors (
+  batch_id uuid primary key references audit_batches(batch_id) on delete cascade,
+  chain text not null,
+  network text not null,
+  tx_signature text not null unique,
+  anchored_at_utc timestamptz not null default now()
+);
+
+create index if not exists ix_audit_batches_status_created on audit_batches(status, created_at_utc);
 ";
         await using var conn = await ds.OpenConnectionAsync(ct);
         await conn.ExecuteAsync(new CommandDefinition(sql, cancellationToken: ct));

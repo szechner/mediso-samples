@@ -21,6 +21,7 @@ builder.Host.UseWolverine(opts =>
 });
 
 builder.Services.AddHostedService<Mediso.AuditSample.Api.Batching.AuditBatchingWorker>();
+builder.Services.AddHostedService<Mediso.AuditSample.Api.Anchoring.AuditAnchoringWorker>();
 
 var app = builder.Build();
 

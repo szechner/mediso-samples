@@ -9,6 +9,9 @@
     <ItemGroup>
       <PackageReference Include="Dapper" Version="2.1.66" />
       <PackageReference Include="Npgsql" Version="9.0.2" />
+      <PackageReference Include="Solnet.Programs" Version="6.1.0" />
+      <PackageReference Include="Solnet.Rpc" Version="6.1.0" />
+      <PackageReference Include="Solnet.Wallet" Version="6.1.0" />
       <PackageReference Include="WolverineFx" Version="4.12.2" />
     </ItemGroup>
 
