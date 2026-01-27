@@ -14,7 +14,7 @@ public class MartenEventStore : IEventStore, IDisposable
 {
     private readonly IDocumentSession _session;
     private readonly ILogger<MartenEventStore> _logger;
-    private static readonly ActivitySource ActivitySource = new(TracingConstants.InfrastructureServiceName);
+    private static readonly ActivitySource ActivitySource = new(PaymentTracingConstants.InfrastructureServiceName);
     private readonly IAuditPublisher _auditPublisher;
     
     public MartenEventStore(IDocumentSession session, ILogger<MartenEventStore> logger, IAuditPublisher auditPublisher)
@@ -39,11 +39,11 @@ public class MartenEventStore : IEventStore, IDisposable
         if (events is null) throw new ArgumentNullException(nameof(events));
         var eventArray = events as IDomainEvent[] ?? events.ToArray();
         using var activity = ActivitySource.StartActivity("EventStore.AppendEvents");
-        activity?.SetTag(TracingConstants.Tags.StreamId, streamId);
-        activity?.SetTag(TracingConstants.Tags.ExpectedVersion, expectedVersion);
+        activity?.SetTag(PaymentTracingConstants.Tags.StreamId, streamId);
+        activity?.SetTag(PaymentTracingConstants.Tags.ExpectedVersion, expectedVersion);
         foreach (var (evt, index) in eventArray.Select((e, i) => (e, i)))
         {
-            activity?.SetTag($"{TracingConstants.Tags.Event}.{index}.Type", evt.GetType().Name);
+            activity?.SetTag($"{PaymentTracingConstants.Tags.Event}.{index}.Type", evt.GetType().Name);
         }
 
         _session.CorrelationId = correlationId;
@@ -54,7 +54,7 @@ public class MartenEventStore : IEventStore, IDisposable
                 eventArray.Length, streamId, expectedVersion);
 
             for (var i = 0; i < eventArray.Length; i++)
-                activity?.SetTag($"{TracingConstants.Tags.Event}.{i}.Type", eventArray[i].GetType().Name);
+                activity?.SetTag($"{PaymentTracingConstants.Tags.Event}.{i}.Type", eventArray[i].GetType().Name);
 
             var state = await _session.Events.FetchStreamStateAsync(streamId, cancellationToken);
 
@@ -97,8 +97,8 @@ public class MartenEventStore : IEventStore, IDisposable
         CancellationToken cancellationToken = default)
     {
         using var activity = ActivitySource.StartActivity("EventStore.GetEvents");
-        activity?.SetTag(TracingConstants.Tags.StreamId, streamId);
-        activity?.SetTag(TracingConstants.Tags.FromVersion, fromVersion);
+        activity?.SetTag(PaymentTracingConstants.Tags.StreamId, streamId);
+        activity?.SetTag(PaymentTracingConstants.Tags.FromVersion, fromVersion);
 
         try
         {
@@ -107,7 +107,7 @@ public class MartenEventStore : IEventStore, IDisposable
             var events = await _session.Events.FetchStreamAsync(streamId, fromVersion, token: cancellationToken);
             var domainEvents = events.Select(e => e.Data).OfType<IDomainEvent>().ToArray();
 
-            activity?.SetTag(TracingConstants.Tags.EventCount, domainEvents.Length);
+            activity?.SetTag(PaymentTracingConstants.Tags.EventCount, domainEvents.Length);
             _logger.LogInformation("Retrieved {Cnt} event(s) from stream {StreamId}", domainEvents.Length, streamId);
 
             return domainEvents;
@@ -124,8 +124,8 @@ public class MartenEventStore : IEventStore, IDisposable
         where T : class, IAggregateRoot
     {
         using var activity = ActivitySource.StartActivity("EventStore.LoadAggregate");
-        activity?.SetTag(TracingConstants.Tags.AggregateId, aggregateId);
-        activity?.SetTag(TracingConstants.Tags.AggregateType, typeof(T).Name);
+        activity?.SetTag(PaymentTracingConstants.Tags.AggregateId, aggregateId);
+        activity?.SetTag(PaymentTracingConstants.Tags.AggregateType, typeof(T).Name);
 
         try
         {
@@ -135,7 +135,7 @@ public class MartenEventStore : IEventStore, IDisposable
 
             if (aggregate != null)
             {
-                activity?.SetTag(TracingConstants.Tags.AggregateVersion, aggregate.Version);
+                activity?.SetTag(PaymentTracingConstants.Tags.AggregateVersion, aggregate.Version);
                 _logger.LogInformation("Loaded {Agg} {Id} at version {Ver}. Uncommitted={Unc}",
                     typeof(T).Name, aggregateId, aggregate.Version, aggregate.GetUncommittedEvents().Count());
             }
@@ -167,12 +167,12 @@ public class MartenEventStore : IEventStore, IDisposable
         if (aggregate is null) throw new ArgumentNullException(nameof(aggregate));
 
         using var activity = ActivitySource.StartActivity("EventStore.SaveAggregate");
-        activity?.SetTag(TracingConstants.Tags.AggregateId, aggregate.Id);
-        activity?.SetTag(TracingConstants.Tags.AggregateType, typeof(T).Name);
-        activity?.SetTag(TracingConstants.Tags.AggregateVersion, aggregate.Version);
+        activity?.SetTag(PaymentTracingConstants.Tags.AggregateId, aggregate.Id);
+        activity?.SetTag(PaymentTracingConstants.Tags.AggregateType, typeof(T).Name);
+        activity?.SetTag(PaymentTracingConstants.Tags.AggregateVersion, aggregate.Version);
 
         var uncommitted = aggregate.GetUncommittedEvents().ToArray();
-        activity?.SetTag(TracingConstants.Tags.EventCount, uncommitted.Length);
+        activity?.SetTag(PaymentTracingConstants.Tags.EventCount, uncommitted.Length);
 
         _session.CorrelationId = correlationId;
         
@@ -191,7 +191,7 @@ public class MartenEventStore : IEventStore, IDisposable
 
             for (var i = 0; i < uncommitted.Length; i++)
             {
-                activity?.SetTag($"{TracingConstants.Tags.Event}.{i}.Type", uncommitted[i].GetType().Name);
+                activity?.SetTag($"{PaymentTracingConstants.Tags.Event}.{i}.Type", uncommitted[i].GetType().Name);
             }
 
             var state = await _session.Events.FetchStreamStateAsync(aggregate.Id, cancellationToken);

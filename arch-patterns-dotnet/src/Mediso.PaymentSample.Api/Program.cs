@@ -64,8 +64,8 @@ app.Use(async (context, next) =>
     var correlationId = context.Request.Headers["X-Correlation-ID"].FirstOrDefault() ?? Guid.NewGuid().ToString();
     context.Response.Headers["X-Correlation-ID"] = correlationId;
 
-    using var activity = TracingConstants.ApiActivitySource.StartActivity(TracingConstants.Activities.HttpRequest);
-    activity?.SetTag(TracingConstants.Tags.CorrelationId, correlationId);
+    using var activity = PaymentTracingConstants.ApiActivitySource.StartActivity(PaymentTracingConstants.Activities.HttpRequest);
+    activity?.SetTag(PaymentTracingConstants.Tags.CorrelationId, correlationId);
     activity?.SetTag("http.method", context.Request.Method);
     activity?.SetTag("http.path", context.Request.Path);
 
@@ -91,7 +91,7 @@ app.UseExceptionHandler(errorApp =>
 
         if (exceptionFeature?.Error != null)
         {
-            using var activity = TracingConstants.ApiActivitySource.StartActivity("error-handling");
+            using var activity = PaymentTracingConstants.ApiActivitySource.StartActivity("error-handling");
             activity?.SetTag("error.type", exceptionFeature.Error.GetType().Name);
             activity?.SetTag("error.message", exceptionFeature.Error.Message);
 
@@ -116,7 +116,7 @@ app.MapDevEndpoints();
 
 try
 {
-    Log.Information("Starting {ServiceName} v{ServiceVersion}", TracingConstants.ServiceName, TracingConstants.ServiceVersion);
+    Log.Information("Starting {ServiceName} v{ServiceVersion}", PaymentTracingConstants.ServiceName, PaymentTracingConstants.ServiceVersion);
     app.Run();
 }
 catch (Exception ex)
@@ -125,6 +125,6 @@ catch (Exception ex)
 }
 finally
 {
-    Log.Information("Shutting down {ServiceName}", TracingConstants.ServiceName);
+    Log.Information("Shutting down {ServiceName}", PaymentTracingConstants.ServiceName);
     Log.CloseAndFlush();
 }

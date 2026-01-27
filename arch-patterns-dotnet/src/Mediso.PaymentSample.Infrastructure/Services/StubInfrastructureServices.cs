@@ -12,7 +12,7 @@ namespace Mediso.PaymentSample.Infrastructure.Services;
 /// </summary>
 public sealed class MemoryIdempotencyService : IIdempotencyService
 {
-    private static readonly ActivitySource ActivitySource = new(TracingConstants.InfrastructureServiceName);
+    private static readonly ActivitySource ActivitySource = new(PaymentTracingConstants.InfrastructureServiceName);
     
     private readonly ConcurrentDictionary<string, (object Response, DateTimeOffset Expiry)> _cache = new();
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
@@ -139,7 +139,7 @@ public sealed class MemoryIdempotencyService : IIdempotencyService
 /// </summary>
 public sealed class StubPaymentProcessor : IPaymentProcessor
 {
-    private static readonly ActivitySource ActivitySource = new(TracingConstants.InfrastructureServiceName);
+    private static readonly ActivitySource ActivitySource = new(PaymentTracingConstants.InfrastructureServiceName);
     
     private readonly ILogger<StubPaymentProcessor> _logger;
 
@@ -153,7 +153,7 @@ public sealed class StubPaymentProcessor : IPaymentProcessor
         CancellationToken cancellationToken = default)
     {
         using var activity = ActivitySource.StartActivity("PaymentProcessor.Authorize");
-        activity?.SetTag(TracingConstants.Tags.PaymentId, request.PaymentId.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentId, request.PaymentId.ToString());
         activity?.SetTag("payment.amount", request.Amount);
         activity?.SetTag("payment.currency", request.Currency);
 
@@ -182,7 +182,7 @@ public sealed class StubPaymentProcessor : IPaymentProcessor
         CancellationToken cancellationToken = default)
     {
         using var activity = ActivitySource.StartActivity("PaymentProcessor.Settle");
-        activity?.SetTag(TracingConstants.Tags.PaymentId, request.PaymentId.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentId, request.PaymentId.ToString());
         activity?.SetTag("payment.settlement_amount", request.SettlementAmount);
 
         // Simulate processing delay
@@ -209,7 +209,7 @@ public sealed class StubPaymentProcessor : IPaymentProcessor
         CancellationToken cancellationToken = default)
     {
         using var activity = ActivitySource.StartActivity("PaymentProcessor.Cancel");
-        activity?.SetTag(TracingConstants.Tags.PaymentId, request.PaymentId.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentId, request.PaymentId.ToString());
 
         // Simulate processing delay
         await Task.Delay(TimeSpan.FromMilliseconds(80), cancellationToken);
@@ -252,7 +252,7 @@ public sealed class StubPaymentProcessor : IPaymentProcessor
 /// </summary>
 public sealed class StubPaymentNotificationService : IPaymentNotificationService
 {
-    private static readonly ActivitySource ActivitySource = new(TracingConstants.InfrastructureServiceName);
+    private static readonly ActivitySource ActivitySource = new(PaymentTracingConstants.InfrastructureServiceName);
     
     private readonly ILogger<StubPaymentNotificationService> _logger;
 
@@ -266,9 +266,9 @@ public sealed class StubPaymentNotificationService : IPaymentNotificationService
         CancellationToken cancellationToken = default)
     {
         using var activity = ActivitySource.StartActivity("NotificationService.SendPaymentNotification");
-        activity?.SetTag(TracingConstants.Tags.PaymentId, notification.PaymentId.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentId, notification.PaymentId.ToString());
         activity?.SetTag("notification.status", notification.Status.ToString());
-        activity?.SetTag(TracingConstants.Tags.CorrelationId, notification.CorrelationId);
+        activity?.SetTag(PaymentTracingConstants.Tags.CorrelationId, notification.CorrelationId);
 
         // Simulate sending notification
         await Task.Delay(TimeSpan.FromMilliseconds(25), cancellationToken);
@@ -282,7 +282,7 @@ public sealed class StubPaymentNotificationService : IPaymentNotificationService
         CancellationToken cancellationToken = default)
     {
         using var activity = ActivitySource.StartActivity("NotificationService.SendWebhook");
-        activity?.SetTag(TracingConstants.Tags.PaymentId, webhook.PaymentId.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentId, webhook.PaymentId.ToString());
         activity?.SetTag("webhook.event_type", webhook.EventType);
         activity?.SetTag("webhook.url", webhook.WebhookUrl);
 

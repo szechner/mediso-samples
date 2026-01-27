@@ -15,7 +15,7 @@ public class GetPaymentUseCase
         IEventStore eventStore,
         ILogger<GetPaymentUseCase> logger)
     {
-        using var activity = TracingConstants.ApiActivitySource.StartActivity("get-payment");
+        using var activity = PaymentTracingConstants.ApiActivitySource.StartActivity("get-payment");
         using var timing = logger.LogTiming("GetPayment", query.PaymentId.ToString());
 
         var correlationId = Activity.Current?.GetBaggageItem("CorrelationId") ?? Guid.NewGuid().ToString();
@@ -25,7 +25,7 @@ public class GetPaymentUseCase
         {
             logger.LogWithContext(LogLevel.Information, "Retrieving payment {PaymentId}", context, query.PaymentId.ToString());
 
-            activity?.SetTag(TracingConstants.Tags.PaymentId, query.PaymentId.ToString());
+            activity?.SetTag(PaymentTracingConstants.Tags.PaymentId, query.PaymentId.ToString());
 
             // Load payment from event store - this will generate database traces!
             var payment = await eventStore.LoadAggregateAsync<Payment>(query.PaymentId);

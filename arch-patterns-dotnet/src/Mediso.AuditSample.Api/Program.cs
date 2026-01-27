@@ -1,14 +1,37 @@
 using Mediso.AuditSample.Infrastructure;
 using Mediso.AuditSample.Infrastructure.Storage;
 using Mediso.PaymentSample.SharedKernel.Audit;
+using Mediso.PaymentSample.SharedKernel.Logging;
+using Mediso.PaymentSample.SharedKernel.Tracing;
+using Serilog;
+using Serilog.Enrichers.Span;
 using Wolverine;
 using Wolverine.Kafka;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Serilog for structured logging
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .Enrich.WithEnvironmentName()
+    .Enrich.WithMachineName()
+    .Enrich.WithThreadId()
+    .Enrich.WithSpan()
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
+var connectionString = builder.Configuration.GetConnectionString("AuditDb");
+if (!string.IsNullOrEmpty(connectionString))
+{
+    builder.Services.AddHealthChecks().AddNpgSql(connectionString);
+}
+
 builder.Services.AddAuditInfrastructure(builder.Configuration);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddSingleton<ILoggingContext, LoggingContext>();
 
 // Wolverine + Kafka (v docker síti!)
 builder.Host.UseWolverine(opts =>
@@ -32,11 +55,56 @@ using (var scope = app.Services.CreateScope())
     await AuditSchema.EnsureAsync(ds, CancellationToken.None);
 }
 
+// Add request correlation ID middleware
+app.Use(async (context, next) =>
+{
+    var correlationId = context.Request.Headers["X-Correlation-ID"].FirstOrDefault() ?? Guid.NewGuid().ToString();
+    context.Response.Headers["X-Correlation-ID"] = correlationId;
+
+    using var activity = AuditTracingConstants.ApiActivitySource.StartActivity(AuditTracingConstants.Activities.HttpRequest);
+    activity?.SetTag(AuditTracingConstants.Tags.CorrelationId, correlationId);
+    activity?.SetTag("http.method", context.Request.Method);
+    activity?.SetTag("http.path", context.Request.Path);
+
+    using (Serilog.Context.LogContext.PushProperty("CorrelationId", correlationId))
+    {
+        await next(context);
+    }
+});
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
 
-app.MapGet("/health", () => Results.Ok(new { ok = true }));
+app.MapHealthChecks("/health");
+
+// Global exception handler
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+        var exceptionFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+
+        if (exceptionFeature?.Error != null)
+        {
+            using var activity = AuditTracingConstants.ApiActivitySource.StartActivity("error-handling");
+            activity?.SetTag("error.type", exceptionFeature.Error.GetType().Name);
+            activity?.SetTag("error.message", exceptionFeature.Error.Message);
+
+            logger.LogError(exceptionFeature.Error, "Unhandled exception occurred: {ErrorMessage}", exceptionFeature.Error.Message);
+        }
+
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsync(
+            System.Text.Json.JsonSerializer.Serialize(new
+            {
+                error = "An internal server error occurred."
+            }));
+    });
+});
+
 
 // dev endpoint: list records for correlationId
 app.MapGet("/dev/audit/case/{correlationId:guid}", async (
@@ -50,7 +118,20 @@ app.MapGet("/dev/audit/case/{correlationId:guid}", async (
     return Results.Ok(items);
 });
 
-app.Run();
+try
+{
+    Log.Information("Starting {ServiceName} v{ServiceVersion}", AuditTracingConstants.ServiceName, AuditTracingConstants.ServiceVersion);
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.Information("Shutting down {ServiceName}", AuditTracingConstants.ServiceName);
+    Log.CloseAndFlush();
+}
 
 /// <summary>
 /// Wolverine handler for Kafka messages.

@@ -5,7 +5,7 @@ namespace Mediso.PaymentSample.SharedKernel.Tracing;
 /// <summary>
 /// Constants for OpenTelemetry tracing and activity sources
 /// </summary>
-public static class TracingConstants
+public static class PaymentTracingConstants
 {
     /// <summary>
     /// The service name used for tracing

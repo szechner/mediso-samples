@@ -12,7 +12,7 @@ namespace Mediso.PaymentSample.Infrastructure.Monitoring;
 /// </summary>
 public class PostgreSql18Logger : IMartenLogger
 {
-    private static readonly ActivitySource ActivitySource = new(TracingConstants.InfrastructureServiceName);
+    private static readonly ActivitySource ActivitySource = new(PaymentTracingConstants.InfrastructureServiceName);
     
     public IMartenSessionLogger StartSession(IQuerySession session)
     {
@@ -36,7 +36,7 @@ public class PostgreSql18SessionLogger : IMartenSessionLogger
 {
     private readonly ILogger<PostgreSql18SessionLogger>? _logger;
     private readonly Dictionary<string, (DateTime StartTime, string CommandText)> _activeQueries = new();
-    private static readonly ActivitySource ActivitySource = new(TracingConstants.InfrastructureServiceName);
+    private static readonly ActivitySource ActivitySource = new(PaymentTracingConstants.InfrastructureServiceName);
 
     public PostgreSql18SessionLogger(ILogger<PostgreSql18SessionLogger>? logger)
     {

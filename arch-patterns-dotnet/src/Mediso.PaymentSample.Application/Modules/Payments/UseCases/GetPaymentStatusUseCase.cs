@@ -17,7 +17,7 @@ public class GetPaymentStatusUseCase
     [FromServices]
     ILogger<GetPaymentStatusUseCase> logger)
     {
-        using var activity = TracingConstants.ApiActivitySource.StartActivity("get-payment-status");
+        using var activity = PaymentTracingConstants.ApiActivitySource.StartActivity("get-payment-status");
         using var timing = logger.LogTiming("GetPaymentStatus");
 
         var requestCorrelationId = query.CorrelationId ?? Activity.Current?.GetBaggageItem("CorrelationId") ?? Guid.NewGuid().ToString();
@@ -33,7 +33,7 @@ public class GetPaymentStatusUseCase
 
             logger.LogWithContext(LogLevel.Information, "Retrieving payment status by correlation ID {CorrelationId}", context, query.CorrelationId);
 
-            activity?.SetTag(TracingConstants.CorrelationId, query.CorrelationId);
+            activity?.SetTag(PaymentTracingConstants.CorrelationId, query.CorrelationId);
 
             var saga = await session.Query<PaymentProcessingSaga>()
                 .Where(x => x.State.CorrelationId == query.CorrelationId)

@@ -54,8 +54,8 @@ public class PaymentProcessingSaga : Saga
     )
     {
         using var activity = ActivitySource.StartActivity("PaymentSaga.Start");
-        activity?.SetTag(TracingConstants.CorrelationId, command.CorrelationId);
-        activity?.SetTag(TracingConstants.IdempotencyKey, command.IdempotencyKey);
+        activity?.SetTag(PaymentTracingConstants.CorrelationId, command.CorrelationId);
+        activity?.SetTag(PaymentTracingConstants.IdempotencyKey, command.IdempotencyKey);
         activity?.SetTag("payment.amount", command.Amount);
         activity?.SetTag("payment.currency", command.Currency);
 
@@ -140,7 +140,7 @@ public class PaymentProcessingSaga : Saga
     )
     {
         using var activity = ActivitySource.StartActivity("PaymentSaga.FraudDetectionCompleted");
-        activity?.SetTag(TracingConstants.CorrelationId, State.CorrelationId);
+        activity?.SetTag(PaymentTracingConstants.CorrelationId, State.CorrelationId);
         activity?.SetTag("saga.id", Id);
         activity?.SetTag("payment.id", fraudResult.PaymentId.Value);
         activity?.SetTag("fraud.risk_level", fraudResult.RiskLevel.ToString());

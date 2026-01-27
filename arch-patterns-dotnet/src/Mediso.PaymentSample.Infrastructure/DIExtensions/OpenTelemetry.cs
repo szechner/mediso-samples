@@ -13,18 +13,18 @@ public static class OpenTelemetryExtensions
     {
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource
-                .AddService(TracingConstants.ServiceName, TracingConstants.ServiceVersion)
+                .AddService(PaymentTracingConstants.ServiceName, PaymentTracingConstants.ServiceVersion)
                 .AddAttributes(new Dictionary<string, object>
                 {
                     ["service.environment"] = environmentName,
                     ["service.instance.id"] = Environment.MachineName,
-                    ["service.version"] = TracingConstants.ServiceVersion
+                    ["service.version"] = PaymentTracingConstants.ServiceVersion
                 }))
             .WithTracing(tracing => tracing
-                .AddSource(TracingConstants.DomainActivitySource.Name)
-                .AddSource(TracingConstants.ApplicationActivitySource.Name)
-                .AddSource(TracingConstants.ApiActivitySource.Name)
-                .AddSource(TracingConstants.InfrastructureActivitySource.Name)
+                .AddSource(PaymentTracingConstants.DomainActivitySource.Name)
+                .AddSource(PaymentTracingConstants.ApplicationActivitySource.Name)
+                .AddSource(PaymentTracingConstants.ApiActivitySource.Name)
+                .AddSource(PaymentTracingConstants.InfrastructureActivitySource.Name)
                 // Marten OpenTelemetry tracing sources
                 .AddSource("Marten")
                 .AddSource("Marten.EventStore")

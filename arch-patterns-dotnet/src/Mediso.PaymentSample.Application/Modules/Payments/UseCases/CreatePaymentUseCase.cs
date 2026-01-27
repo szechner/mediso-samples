@@ -37,7 +37,7 @@ public class CreatePaymentUseCase
         ILogger<CreatePaymentUseCase> logger
     )
     {
-        using var activity = TracingConstants.ApiActivitySource.StartActivity("create-payment");
+        using var activity = PaymentTracingConstants.ApiActivitySource.StartActivity("create-payment");
         using var timing = logger.LogTiming("CreatePayment");
 
         var correlationId = Activity.Current?.GetBaggageItem("CorrelationId") ?? Guid.NewGuid().ToString();
@@ -116,10 +116,10 @@ public class CreatePaymentUseCase
                 "Created InitiatePaymentCommand - PaymentId will be generated, Amount: {Amount}, Description: {Description}",
                 context, initiateCommand.Amount, initiateCommand.Description);
 
-            activity?.SetTag(TracingConstants.CorrelationId, correlationId);
-            activity?.SetTag(TracingConstants.IdempotencyKey, idempotencyKey);
-            activity?.SetTag(TracingConstants.Tags.PaymentAmount, request.Amount.ToString());
-            activity?.SetTag(TracingConstants.Tags.PaymentCurrency, request.Currency);
+            activity?.SetTag(PaymentTracingConstants.CorrelationId, correlationId);
+            activity?.SetTag(PaymentTracingConstants.IdempotencyKey, idempotencyKey);
+            activity?.SetTag(PaymentTracingConstants.Tags.PaymentAmount, request.Amount.ToString());
+            activity?.SetTag(PaymentTracingConstants.Tags.PaymentCurrency, request.Currency);
             activity?.SetTag("saga.initiated", true);
 
             // Start payment workflow asynchronously by publishing the command

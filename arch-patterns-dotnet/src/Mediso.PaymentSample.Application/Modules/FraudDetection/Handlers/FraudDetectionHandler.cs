@@ -50,7 +50,7 @@ public static class FraudDetectionHandler
         CancellationToken cancellationToken = default)
     {
         using var activity = ActivitySource.StartActivity("FraudDetection.PerformAnalysis");
-        activity?.SetTag(TracingConstants.CorrelationId, command.CorrelationId);
+        activity?.SetTag(PaymentTracingConstants.CorrelationId, command.CorrelationId);
         activity?.SetTag("payment.id", command.PaymentId.Value);
         activity?.SetTag("customer.id", command.CustomerId.Value);
         activity?.SetTag("payment.amount", command.Amount);

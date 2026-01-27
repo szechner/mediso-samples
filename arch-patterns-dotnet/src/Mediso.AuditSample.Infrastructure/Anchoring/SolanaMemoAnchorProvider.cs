@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Solnet.Programs;
 using Solnet.Rpc;
 using Solnet.Rpc.Builders;
@@ -11,16 +12,17 @@ public sealed class SolanaMemoAnchorProvider : IAnchorProvider
 {
     private readonly IRpcClient _rpc;
     private readonly Account _payer;
+    private readonly ILogger<SolanaMemoAnchorProvider> _logger;
 
-    public SolanaMemoAnchorProvider(IConfiguration cfg)
+    public SolanaMemoAnchorProvider(IConfiguration cfg, ILogger<SolanaMemoAnchorProvider> logger)
     {
+        _logger = logger;
         var rpcUrl = cfg["Solana:RpcUrl"] ?? "https://api.mainnet-beta.solana.com";
         var privateKey = cfg["Solana:PrivateKey"] ?? throw new InvalidOperationException("Solana:PrivateKey missing");
         var publicKey  = cfg["Solana:PublicKey"]  ?? throw new InvalidOperationException("Solana:PublicKey missing");
 
-        _rpc = ClientFactory.GetClient(rpcUrl);
+        _rpc = ClientFactory.GetClient(rpcUrl, _logger);
 
-        // Ty říkáš, že Account ctor je (string privateKey, string publicKey)
         _payer = new Account(privateKey, publicKey);
     }
 
@@ -38,7 +40,11 @@ public sealed class SolanaMemoAnchorProvider : IAnchorProvider
             .Build(_payer);
 
         var send = await _rpc.SendTransactionAsync(tx, skipPreflight: false, commitment: Commitment.Confirmed);
-        if (!send.WasSuccessful) throw new Exception(send.Reason);
+        if (!send.WasSuccessful)
+        {
+            _logger.LogError("Anchoring failed. Reason {FailedReason}", send.Reason);
+            throw new Exception(send.Reason);
+        }
 
         return send.Result; // signature
     }

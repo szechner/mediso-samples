@@ -19,7 +19,7 @@ namespace Mediso.PaymentSample.Infrastructure.Configuration;
 
 public static class MartenConfiguration
 {
-    private static readonly ActivitySource ActivitySource = new(TracingConstants.InfrastructureServiceName);
+    private static readonly ActivitySource ActivitySource = new(PaymentTracingConstants.InfrastructureServiceName);
 
     public static IServiceCollection AddMartenEventStore(this IServiceCollection services, string connectionString)
     {

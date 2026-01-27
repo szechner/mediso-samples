@@ -14,7 +14,7 @@ namespace Mediso.PaymentSample.Infrastructure.Repositories;
 /// </summary>
 public sealed class MartenPaymentRepository : IPaymentRepository
 {
-    private static readonly ActivitySource ActivitySource = new(TracingConstants.InfrastructureServiceName);
+    private static readonly ActivitySource ActivitySource = new(PaymentTracingConstants.InfrastructureServiceName);
     
     private readonly IDocumentSession _session;
     private readonly ILogger<MartenPaymentRepository> _logger;
@@ -35,7 +35,7 @@ public sealed class MartenPaymentRepository : IPaymentRepository
         CancellationToken cancellationToken = default)
     {
         using var activity = ActivitySource.StartActivity("PaymentRepository.GetById");
-        activity?.SetTag(TracingConstants.Tags.PaymentId, paymentId.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentId, paymentId.ToString());
         activity?.SetTag("repository.method", "GetByIdAsync");
         
         if (asOfDate.HasValue)
@@ -97,7 +97,7 @@ public sealed class MartenPaymentRepository : IPaymentRepository
         CancellationToken cancellationToken = default)
     {
         using var activity = ActivitySource.StartActivity("PaymentRepository.Save");
-        activity?.SetTag(TracingConstants.Tags.PaymentId, payment.Id.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentId, payment.Id.ToString());
         activity?.SetTag("repository.method", "SaveAsync");
         activity?.SetTag("payment.state", payment.State.ToString());
         
@@ -158,7 +158,7 @@ public sealed class MartenPaymentRepository : IPaymentRepository
         CancellationToken cancellationToken = default)
     {
         using var activity = ActivitySource.StartActivity("PaymentRepository.Exists");
-        activity?.SetTag(TracingConstants.Tags.PaymentId, paymentId.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentId, paymentId.ToString());
         activity?.SetTag("repository.method", "ExistsAsync");
 
         try
@@ -192,7 +192,7 @@ public sealed class MartenPaymentRepository : IPaymentRepository
         CancellationToken cancellationToken = default)
     {
         using var activity = ActivitySource.StartActivity("PaymentRepository.GetStatus");
-        activity?.SetTag(TracingConstants.Tags.PaymentId, paymentId.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentId, paymentId.ToString());
         activity?.SetTag("repository.method", "GetStatusAsync");
 
         try

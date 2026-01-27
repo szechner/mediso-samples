@@ -36,8 +36,8 @@ public class SettlePaymentCommandHandler : ISettlePaymentHandler
         CancellationToken cancellationToken = default)
     {
         using var activity = ActivitySource.StartActivity("Command.SettlePayment");
-        activity?.SetTag(TracingConstants.CorrelationId, command.CorrelationId);
-        activity?.SetTag(TracingConstants.IdempotencyKey, command.IdempotencyKey);
+        activity?.SetTag(PaymentTracingConstants.CorrelationId, command.CorrelationId);
+        activity?.SetTag(PaymentTracingConstants.IdempotencyKey, command.IdempotencyKey);
         activity?.SetTag("payment.id", command.PaymentId.Value);
         activity?.SetTag("payment.settlement_amount", command.SettlementAmount);
 

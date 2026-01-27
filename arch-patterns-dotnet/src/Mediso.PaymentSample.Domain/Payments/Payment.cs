@@ -75,11 +75,11 @@ public sealed class Payment : Aggregate<PaymentId>
     /// <exception cref="DomainException">Thrown when payer and payee are the same account</exception>
     public static Payment Create(PaymentId id, Money amount, AccountId payer, AccountId payee, string reference)
     {
-        using var activity = TracingConstants.DomainActivitySource.StartActivity(TracingConstants.Activities.PaymentCreation);
-        activity?.SetTag(TracingConstants.Tags.PaymentId, id.ToString());
-        activity?.SetTag(TracingConstants.Tags.PaymentAmount, amount.Amount.ToString());
-        activity?.SetTag(TracingConstants.Tags.PaymentCurrency, amount.Currency.Code);
-        activity?.SetTag(TracingConstants.Tags.OperationType, "create");
+        using var activity = PaymentTracingConstants.DomainActivitySource.StartActivity(PaymentTracingConstants.Activities.PaymentCreation);
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentId, id.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentAmount, amount.Amount.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentCurrency, amount.Currency.Code);
+        activity?.SetTag(PaymentTracingConstants.Tags.OperationType, "create");
 
         if (payer.Value == payee.Value)
             throw new DomainException("Payer and Payee must differ");
@@ -87,7 +87,7 @@ public sealed class Payment : Aggregate<PaymentId>
         var payment = new Payment();
         payment.Raise(new PaymentRequested(id, amount.EnsurePositive(), payer, payee, reference));
 
-        activity?.SetTag(TracingConstants.Tags.PaymentState, PaymentState.Requested.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentState, PaymentState.Requested.ToString());
 
         return payment;
     }
@@ -100,10 +100,10 @@ public sealed class Payment : Aggregate<PaymentId>
     /// <exception cref="DomainException">Thrown when the payment is not in an allowed state</exception>
     public void MarkAMLPassed(string ruleSetVersion)
     {
-        using var activity = TracingConstants.DomainActivitySource.StartActivity(TracingConstants.Activities.AMLCheck);
-        activity?.SetTag(TracingConstants.Tags.PaymentId, Id.ToString());
-        activity?.SetTag(TracingConstants.Tags.PaymentState, State.ToString());
-        activity?.SetTag(TracingConstants.Tags.OperationType, "aml-passed");
+        using var activity = PaymentTracingConstants.DomainActivitySource.StartActivity(PaymentTracingConstants.Activities.AMLCheck);
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentId, Id.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentState, State.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.OperationType, "aml-passed");
 
         EnsureState(PaymentState.Requested, PaymentState.Flagged, PaymentState.Released);
         Raise(new AMLPassed(Id, ruleSetVersion));
@@ -141,11 +141,11 @@ public sealed class Payment : Aggregate<PaymentId>
     /// <exception cref="DomainException">Thrown when the payment is not in Requested or Released state</exception>
     public void ReserveFunds(ReservationId reservationId)
     {
-        using var activity = TracingConstants.DomainActivitySource.StartActivity(TracingConstants.Activities.FundsReservation);
-        activity?.SetTag(TracingConstants.Tags.PaymentId, Id.ToString());
-        activity?.SetTag(TracingConstants.Tags.PaymentState, State.ToString());
-        activity?.SetTag(TracingConstants.Tags.ReservationId, reservationId.ToString());
-        activity?.SetTag(TracingConstants.Tags.OperationType, "reserve-funds");
+        using var activity = PaymentTracingConstants.DomainActivitySource.StartActivity(PaymentTracingConstants.Activities.FundsReservation);
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentId, Id.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentState, State.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.ReservationId, reservationId.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.OperationType, "reserve-funds");
 
         EnsureState(PaymentState.Requested, PaymentState.Released);
         Raise(new FundsReserved(Id, reservationId, Amount));
@@ -171,10 +171,10 @@ public sealed class Payment : Aggregate<PaymentId>
     /// <exception cref="DomainException">Thrown when the payment is not in Reserved state or no entries provided</exception>
     public void Journal(IReadOnlyList<LedgerEntry> entries)
     {
-        using var activity = TracingConstants.DomainActivitySource.StartActivity(TracingConstants.Activities.PaymentJournaling);
-        activity?.SetTag(TracingConstants.Tags.PaymentId, Id.ToString());
-        activity?.SetTag(TracingConstants.Tags.PaymentState, State.ToString());
-        activity?.SetTag(TracingConstants.Tags.OperationType, "journal");
+        using var activity = PaymentTracingConstants.DomainActivitySource.StartActivity(PaymentTracingConstants.Activities.PaymentJournaling);
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentId, Id.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentState, State.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.OperationType, "journal");
         activity?.SetTag("entries.count", entries.Count.ToString());
 
         EnsureState(PaymentState.Reserved);
@@ -191,10 +191,10 @@ public sealed class Payment : Aggregate<PaymentId>
     /// <exception cref="DomainException">Thrown when the payment is not in Journaled state</exception>
     public void Settle(string channel, string? externalRef)
     {
-        using var activity = TracingConstants.DomainActivitySource.StartActivity(TracingConstants.Activities.PaymentSettlement);
-        activity?.SetTag(TracingConstants.Tags.PaymentId, Id.ToString());
-        activity?.SetTag(TracingConstants.Tags.PaymentState, State.ToString());
-        activity?.SetTag(TracingConstants.Tags.OperationType, "settle");
+        using var activity = PaymentTracingConstants.DomainActivitySource.StartActivity(PaymentTracingConstants.Activities.PaymentSettlement);
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentId, Id.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.PaymentState, State.ToString());
+        activity?.SetTag(PaymentTracingConstants.Tags.OperationType, "settle");
         activity?.SetTag("settlement.channel", channel);
         if (externalRef != null)
             activity?.SetTag("settlement.external_ref", externalRef);

@@ -36,8 +36,8 @@ public class CancelPaymentCommandHandler : ICancelPaymentHandler
         CancellationToken cancellationToken = default)
     {
         using var activity = ActivitySource.StartActivity("Command.CancelPayment");
-        activity?.SetTag(TracingConstants.CorrelationId, command.CorrelationId);
-        activity?.SetTag(TracingConstants.IdempotencyKey, command.IdempotencyKey);
+        activity?.SetTag(PaymentTracingConstants.CorrelationId, command.CorrelationId);
+        activity?.SetTag(PaymentTracingConstants.IdempotencyKey, command.IdempotencyKey);
         activity?.SetTag("payment.id", command.PaymentId.Value);
         activity?.SetTag("payment.cancellation_category", command.Category.ToString());
 
