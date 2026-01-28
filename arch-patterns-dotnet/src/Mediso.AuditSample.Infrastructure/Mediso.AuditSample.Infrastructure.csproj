@@ -16,6 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Mediso.AuditSample.Domain\Mediso.AuditSample.Domain.csproj" />
       <ProjectReference Include="..\Mediso.PaymentSample.SharedKernel\Mediso.PaymentSample.SharedKernel.csproj" />
     </ItemGroup>
 

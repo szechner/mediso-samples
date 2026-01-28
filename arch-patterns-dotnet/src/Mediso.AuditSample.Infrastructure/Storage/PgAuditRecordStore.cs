@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Mediso.AuditSample.Domain.Services;
 using Mediso.PaymentSample.SharedKernel.Audit;
 using Npgsql;
 

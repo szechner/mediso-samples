@@ -1,10 +1,11 @@
-﻿using Mediso.AuditSample.Infrastructure.Anchoring;
+﻿using Mediso.AuditSample.Domain.Services;
+using Mediso.AuditSample.Infrastructure.Anchoring;
 using Mediso.AuditSample.Infrastructure.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 
-namespace Mediso.AuditSample.Infrastructure;
+namespace Mediso.AuditSample.Infrastructure.DIExtensions;
 
 public static class AuditInfrastructureExtensions
 {
@@ -13,9 +14,19 @@ public static class AuditInfrastructureExtensions
         services.AddSingleton<NpgsqlDataSource>(_ =>
             NpgsqlDataSource.Create(cfg.GetConnectionString("AuditDb")!));
 
-        services.AddScoped<IAuditRecordStore, PgAuditRecordStore>();
-        services.AddScoped<IAuditBatchStore, PgAuditBatchStore>();
+        services.AddSingleton<IAuditRecordStore, PgAuditRecordStore>();
+        services.AddSingleton<IAuditBatchStore, PgAuditBatchStore>();
         services.AddSingleton<IAnchorProvider, SolanaMemoAnchorProvider>();
+        services.AddSingleton<IAuditAnchorStore, PgAuditAnchorStore>();
+
+        services.AddSingleton<Solnet.Rpc.IRpcClient>(sp =>
+        {
+            var cfg = sp.GetRequiredService<IConfiguration>();
+            var url = cfg["Solana:RpcUrl"] ?? "https://api.mainnet-beta.solana.com";
+            return Solnet.Rpc.ClientFactory.GetClient(url);
+        });
+
+        services.AddSingleton<Mediso.AuditSample.Infrastructure.Solana.SolanaTxVerifier>();
         
         return services;
     }

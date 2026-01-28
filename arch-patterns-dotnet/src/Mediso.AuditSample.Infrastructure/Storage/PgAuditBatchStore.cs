@@ -1,5 +1,6 @@
 ﻿using Dapper;
-using Mediso.AuditSample.Infrastructure.Crypto;
+using Mediso.AuditSample.Domain.Crypto;
+using Mediso.AuditSample.Domain.Services;
 using Npgsql;
 
 namespace Mediso.AuditSample.Infrastructure.Storage;
@@ -31,15 +32,23 @@ limit @take;
             return null;
         }
 
-        // 2) Leaf hashes
+        // 2) Leaf hashes + index
         var leafBytes = new List<byte[]>(rows.Count);
-        var leafHexByRecordId = new List<(long RecordId, string LeafHex)>(rows.Count);
+        var items = new List<(long RecordId, int LeafIndex, string LeafHex)>(rows.Count);
 
-        foreach (var r in rows)
+        for (int i = 0; i < rows.Count; i++)
         {
-            var leaf = Merkle.LeafFromParts(r.EventId, r.CorrelationId, r.OccurredAtUtc, r.PayloadSha256);
+            var r = rows[i];
+
+            var leaf = Merkle.LeafFromParts(
+                r.EventId,
+                r.CorrelationId,
+                DateTime.SpecifyKind(r.OccurredAtUtc, DateTimeKind.Utc),
+                r.PayloadSha256
+            );
+
             leafBytes.Add(leaf);
-            leafHexByRecordId.Add((r.Id, Convert.ToHexString(leaf).ToLowerInvariant()));
+            items.Add((r.Id, i, Convert.ToHexString(leaf).ToLowerInvariant()));
         }
 
         var rootHex = Merkle.ComputeRootHex(leafBytes);
@@ -66,19 +75,29 @@ insert into audit_batches (
             Status = "PendingAnchor"
         }, tx, cancellationToken: ct));
 
-        // 5) Insert items
+        // 5) Insert items (leaf_index + leaf_sha256)
         await conn.ExecuteAsync(new CommandDefinition(@"
-insert into audit_batch_items (batch_id, audit_record_id, leaf_sha256)
-values (@BatchId, @RecordId, @LeafHex);
-", leafHexByRecordId.Select(x => new { BatchId = batchId, RecordId = x.RecordId, LeafHex = x.LeafHex }), tx, cancellationToken: ct));
+insert into audit_batch_items (batch_id, audit_record_id, leaf_index, leaf_sha256)
+values (@BatchId, @RecordId, @LeafIndex, @LeafHex);
+", items.Select(x => new
+        {
+            BatchId = batchId,
+            RecordId = x.RecordId,
+            LeafIndex = x.LeafIndex,
+            LeafHex = x.LeafHex
+        }), tx, cancellationToken: ct));
 
         await tx.CommitAsync(ct);
 
-        return new CreatedBatch(batchId, rootHex, rows.Count,
+        return new CreatedBatch(
+            batchId,
+            rootHex,
+            rows.Count,
             DateTime.SpecifyKind(fromUtc, DateTimeKind.Utc),
-            DateTime.SpecifyKind(toUtc, DateTimeKind.Utc));
+            DateTime.SpecifyKind(toUtc, DateTimeKind.Utc)
+        );
     }
-    
+
     public async Task<PendingBatch?> GetNextPendingAnchorAsync(CancellationToken ct)
     {
         await using var conn = await _ds.OpenConnectionAsync(ct);
@@ -87,6 +106,7 @@ values (@BatchId, @RecordId, @LeafHex);
 select batch_id as BatchId, merkle_root_sha256 as MerkleRootSha256
 from audit_batches
 where status = 'PendingAnchor'
+  and (next_retry_at_utc is null or next_retry_at_utc <= now())
 order by created_at_utc asc
 limit 1;
 ";
@@ -100,13 +120,20 @@ limit 1;
 
         await conn.ExecuteAsync(new CommandDefinition(@"
 update audit_batches
-set status = 'Anchored'
+set
+  status = 'Anchored',
+  last_error = null,
+  next_retry_at_utc = null
 where batch_id = @batchId;
 ", new { batchId }, tx, cancellationToken: ct));
 
         await conn.ExecuteAsync(new CommandDefinition(@"
 insert into audit_anchors (batch_id, chain, network, tx_signature)
-values (@batchId, @chain, @network, @txSignature);
+values (@batchId, @chain, @network, @txSignature)
+on conflict (batch_id) do update set
+  chain = excluded.chain,
+  network = excluded.network,
+  tx_signature = excluded.tx_signature;
 ", new { batchId, chain, network, txSignature }, tx, cancellationToken: ct));
 
         await tx.CommitAsync(ct);
@@ -115,13 +142,16 @@ values (@batchId, @chain, @network, @txSignature);
     public async Task MarkAnchorFailedAsync(Guid batchId, string reason, CancellationToken ct)
     {
         await using var conn = await _ds.OpenConnectionAsync(ct);
+
+        // Backoff: 5s * 2^min(retry_count, 6) => max ~320s
         await conn.ExecuteAsync(new CommandDefinition(@"
 update audit_batches
-set status = 'AnchorFailed'
+set
+  status = 'PendingAnchor',
+  retry_count = retry_count + 1,
+  last_error = @reason,
+  next_retry_at_utc = now() + (interval '5 seconds' * power(2, least(retry_count, 6)))
 where batch_id = @batchId;
-", new { batchId }, cancellationToken: ct));
-
-        // reason zatím neukládáme
+", new { batchId, reason }, cancellationToken: ct));
     }
-
 }

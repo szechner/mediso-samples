@@ -1,4 +1,5 @@
-﻿using Mediso.AuditSample.Infrastructure.Storage;
+﻿using Mediso.AuditSample.Domain.Services;
+using Mediso.AuditSample.Infrastructure.Storage;
 
 namespace Mediso.AuditSample.Api.Batching;
 

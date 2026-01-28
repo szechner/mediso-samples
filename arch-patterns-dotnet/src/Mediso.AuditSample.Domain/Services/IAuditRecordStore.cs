@@ -1,6 +1,6 @@
 ﻿using Mediso.PaymentSample.SharedKernel.Audit;
 
-namespace Mediso.AuditSample.Infrastructure.Storage;
+namespace Mediso.AuditSample.Domain.Services;
 
 public readonly record struct InsertResult(bool Inserted);
 

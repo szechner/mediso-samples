@@ -1,4 +1,8 @@
+using Mediso.AuditSample.Application;
+using Mediso.AuditSample.Application.Handlers;
+using Mediso.AuditSample.Domain.Services;
 using Mediso.AuditSample.Infrastructure;
+using Mediso.AuditSample.Infrastructure.DIExtensions;
 using Mediso.AuditSample.Infrastructure.Storage;
 using Mediso.PaymentSample.SharedKernel.Audit;
 using Mediso.PaymentSample.SharedKernel.Logging;
@@ -33,6 +37,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<ILoggingContext, LoggingContext>();
 
+// Case queries + service
+builder.Services.AddSingleton<IPgAuditCaseQueries, PgAuditCaseQueries>();
+builder.Services.AddSingleton<AuditCaseService>();
+
 // Wolverine + Kafka (v docker síti!)
 builder.Host.UseWolverine(opts =>
 {
@@ -41,10 +49,13 @@ builder.Host.UseWolverine(opts =>
 
     // listen
     opts.ListenToKafkaTopic("payments.audit.v1");
+
+    opts.ApplicationAssembly = typeof(AuditIngestHandler).Assembly;
 });
 
 builder.Services.AddHostedService<Mediso.AuditSample.Api.Batching.AuditBatchingWorker>();
 builder.Services.AddHostedService<Mediso.AuditSample.Api.Anchoring.AuditAnchoringWorker>();
+builder.Services.AddHostedService<Mediso.AuditSample.Api.Anchoring.AuditAnchorVerificationWorker>();
 
 var app = builder.Build();
 
@@ -75,7 +86,6 @@ app.Use(async (context, next) =>
 app.UseSwagger();
 app.UseSwaggerUI();
 
-
 app.MapHealthChecks("/health");
 
 // Global exception handler
@@ -105,17 +115,69 @@ app.UseExceptionHandler(errorApp =>
     });
 });
 
+// ========================
+// Audit Case Endpoints
+// ========================
 
-// dev endpoint: list records for correlationId
-app.MapGet("/dev/audit/case/{correlationId:guid}", async (
+// 1) Evidence + coverage snapshot
+app.MapGet("/audit/cases/{correlationId:guid}", async (
     Guid correlationId,
+    DateTimeOffset? fromUtc,
+    DateTimeOffset? toUtc,
     int? take,
-    IAuditRecordStore store,
+    bool? includePayload,
+    AuditCaseService svc,
     CancellationToken ct
 ) =>
 {
-    var items = await store.GetByCorrelationIdAsync(correlationId, take ?? 50, ct);
-    return Results.Ok(items);
+    var snap = await svc.GetSnapshotAsync(
+        correlationId,
+        fromUtc,
+        toUtc,
+        take,
+        includePayload ?? true,
+        ct
+    );
+
+    return Results.Ok(snap);
+});
+
+// 2) Verify case (Merkle proof + coverage). RPC verify můžeme doplnit později.
+app.MapGet("/audit/cases/{correlationId:guid}/verify", async (
+    Guid correlationId,
+    DateTimeOffset? fromUtc,
+    DateTimeOffset? toUtc,
+    int? take,
+    AuditCaseService svc,
+    CancellationToken ct
+) =>
+{
+    var (result, _) = await svc.VerifyAsync(correlationId, fromUtc, toUtc, take, ct);
+    return Results.Ok(result);
+});
+
+// 3) Export ZIP (case.json + proofs + report)
+app.MapGet("/audit/cases/{correlationId:guid}/export", async (
+    Guid correlationId,
+    DateTimeOffset? fromUtc,
+    DateTimeOffset? toUtc,
+    int? take,
+    bool? includePayload,
+    AuditCaseService svc,
+    CancellationToken ct
+) =>
+{
+    var bytes = await svc.ExportZipAsync(
+        correlationId,
+        fromUtc,
+        toUtc,
+        take,
+        includePayload ?? true,
+        ct
+    );
+
+    var fileName = $"audit-case-{correlationId:D}.zip";
+    return Results.File(bytes, "application/zip", fileName);
 });
 
 try
@@ -131,27 +193,4 @@ finally
 {
     Log.Information("Shutting down {ServiceName}", AuditTracingConstants.ServiceName);
     Log.CloseAndFlush();
-}
-
-/// <summary>
-/// Wolverine handler for Kafka messages.
-/// </summary>
-public sealed class AuditIngestHandler
-{
-    private readonly IAuditRecordStore _store;
-    private readonly ILogger<AuditIngestHandler> _log;
-
-    public AuditIngestHandler(IAuditRecordStore store, ILogger<AuditIngestHandler> log)
-    {
-        _store = store;
-        _log = log;
-    }
-
-    public async Task Handle(AuditEventV1 msg, CancellationToken ct)
-    {
-        var result = await _store.TryInsertAsync(msg, ct);
-
-        if (!result.Inserted)
-            _log.LogInformation("Duplicate audit event ignored. EventId={EventId}", msg.EventId);
-    }
 }

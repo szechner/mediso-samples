@@ -1,4 +1,4 @@
-﻿namespace Mediso.AuditSample.Infrastructure.Storage;
+﻿namespace Mediso.AuditSample.Domain.Services;
 
 public sealed record CreatedBatch(Guid BatchId, string MerkleRootSha256, int RecordsCount, DateTime FromUtc, DateTime ToUtc);
 public sealed record PendingBatch(Guid BatchId, string MerkleRootSha256);
